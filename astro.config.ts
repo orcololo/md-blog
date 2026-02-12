@@ -24,6 +24,9 @@ export default defineConfig({
   integrations: [mdx(), react(), sitemap(), icon()],
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      allowedHosts: ['vwww84ckc08owskcwcgksc8k.tucujulabs.com'],
+    },
   },
   server: {
     port: 3000,
