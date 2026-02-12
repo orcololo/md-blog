@@ -25,7 +25,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     server: {
-      allowedHosts: ['vwww84ckc08owskcwcgksc8k.tucujulabs.com'],
+      allowedHosts: true,
     },
   },
   server: {
