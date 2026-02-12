@@ -26,7 +26,15 @@ export default defineConfig({
     plugins: [tailwindcss()],
     server: {
       allowedHosts: ['.tucujulabs.com'],
-      cors: true,
+      cors: {
+        origin: '*',
+        credentials: true,
+      },
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+      },
     },
   },
   server: {
