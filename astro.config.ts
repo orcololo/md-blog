@@ -26,6 +26,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
     server: {
       allowedHosts: ['.tucujulabs.com'],
+      cors: true,
     },
   },
   server: {
