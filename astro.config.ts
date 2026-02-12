@@ -24,6 +24,16 @@ export default defineConfig({
   integrations: [mdx(), react(), sitemap(), icon()],
   vite: {
     plugins: [tailwindcss()],
+    preview: {
+      host: '0.0.0.0',
+      port: 3000,
+      cors: true,
+      strictPort: false,
+    },
+    server: {
+      host: '0.0.0.0',
+      cors: true,
+    },
   },
   server: {
     port: 3000,
