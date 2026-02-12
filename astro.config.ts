@@ -29,10 +29,18 @@ export default defineConfig({
       port: 3000,
       cors: true,
       strictPort: false,
+      allowedHosts: [
+        '.tucujulabs.com',
+        'vwww84ckc08owskcwcgksc8k.tucujulabs.com',
+      ],
     },
     server: {
       host: '0.0.0.0',
       cors: true,
+      allowedHosts: [
+        '.tucujulabs.com',
+        'vwww84ckc08owskcwcgksc8k.tucujulabs.com',
+      ],
     },
   },
   server: {
