@@ -24,18 +24,6 @@ export default defineConfig({
   integrations: [mdx(), react(), sitemap(), icon()],
   vite: {
     plugins: [tailwindcss()],
-    server: {
-      allowedHosts: ['.tucujulabs.com'],
-      cors: {
-        origin: '*',
-        credentials: true,
-      },
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': '*',
-      },
-    },
   },
   server: {
     port: 3000,
