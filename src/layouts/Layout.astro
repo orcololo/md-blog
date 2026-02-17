@@ -23,10 +23,12 @@ const { class: className } = Astro.props
   <Head>
     <slot name="head" />
   </Head>
-  <body class="animate-flicker flex h-fit min-h-screen flex-col gap-y-6 font-sans text-sm">
+  <body
+    class="animate-flicker flex h-fit min-h-screen flex-col gap-y-6 font-sans text-sm"
+  >
     <!-- Noise grain overlay -->
     <div
-      class="pointer-events-none fixed inset-0 z-[100] opacity-[0.025] dark:opacity-[0.04] mix-blend-overlay"
+      class="pointer-events-none fixed inset-0 z-[100] opacity-[0.025] mix-blend-overlay dark:opacity-[0.04]"
       aria-hidden="true"
     >
       <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg">
@@ -35,10 +37,9 @@ const { class: className } = Astro.props
             type="fractalNoise"
             baseFrequency="0.9"
             numOctaves="4"
-            stitchTiles="stitch"
-          />
+            stitchTiles="stitch"></feTurbulence>
         </filter>
-        <rect width="100%" height="100%" filter="url(#grain)" />
+        <rect width="100%" height="100%" filter="url(#grain)"></rect>
       </svg>
     </div>
     <!-- Scanline overlay -->

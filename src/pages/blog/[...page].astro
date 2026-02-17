@@ -39,7 +39,7 @@ const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
           class="animate-fade-in-up flex flex-col gap-y-4"
           style={`animation-delay: ${yi * 100}ms`}
         >
-          <div class="font-mono text-xs text-muted-foreground">// {year}</div>
+          <div class="text-muted-foreground font-mono text-xs">// {year}</div>
           <ul class="flex flex-col gap-4">
             {postsByYear[year].map((post, pi) => (
               <li

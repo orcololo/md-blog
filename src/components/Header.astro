@@ -8,12 +8,16 @@ import { NAV_LINKS, SITE } from '@/consts'
   <div
     class="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3"
   >
-    <Link href="/" class="flex shrink-0 items-center justify-center gap-2 font-mono group">
+    <Link
+      href="/"
+      class="group flex shrink-0 items-center justify-center gap-2 font-mono"
+    >
       <span class="text-primary">&#x25B8;</span>
-      <span
-        class="hidden text-sm font-medium min-[400px]:block"
+      <span class="hidden text-sm font-medium min-[400px]:block"
         >{SITE.title}</span
-      ><span class="animate-blink text-primary hidden min-[400px]:inline">_</span>
+      ><span class="animate-blink text-primary hidden min-[400px]:inline"
+        >_</span
+      >
     </Link>
     <div class="flex items-center gap-4">
       <nav class="flex items-center gap-1 font-mono text-xs sm:text-sm">

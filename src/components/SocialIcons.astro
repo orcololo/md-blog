@@ -20,7 +20,10 @@ const { links } = Astro.props
           href={href}
           aria-label={label}
           title={label}
-          class={buttonVariants({ variant: 'outline', size: 'icon' }) + ' border-dashed hover:border-primary/50 dark:hover:shadow-sm'}
+          class={
+            buttonVariants({ variant: 'outline', size: 'icon' }) +
+            ' hover:border-primary/50 border-dashed dark:hover:shadow-sm'
+          }
           external
         >
           <Icon

@@ -12,12 +12,10 @@ import { cn } from '@/lib/utils'
   <PageHead slot="head" title="404" />
   <Breadcrumbs items={[{ label: '???', icon: 'lucide:circle-help' }]} />
 
-  <section
-    class="flex flex-col items-center justify-center gap-y-6"
-  >
+  <section class="flex flex-col items-center justify-center gap-y-6">
     <TerminalWindow
       title="error — 404"
-      class="w-full max-w-lg animate-fade-in-up"
+      class="animate-fade-in-up w-full max-w-lg"
     >
       <div class="space-y-2 text-sm">
         <div class="flex gap-2">
@@ -25,9 +23,7 @@ import { cn } from '@/lib/utils'
           <span class="text-muted-foreground shrink-0">$</span>
           <span>curl localhost{Astro.url.pathname}</span>
         </div>
-        <p class="text-destructive">
-          Error 404: page not found
-        </p>
+        <p class="text-destructive">Error 404: page not found</p>
         <p class="text-muted-foreground text-xs">
           The requested URL was not found on this server.
         </p>
@@ -40,11 +36,13 @@ import { cn } from '@/lib/utils'
     </TerminalWindow>
     <Link
       href="/"
-      class={cn(buttonVariants({ variant: 'outline' }), 'flex gap-x-1.5 group font-mono animate-fade-in-up')}
+      class={cn(
+        buttonVariants({ variant: 'outline' }),
+        'flex gap-x-1.5 group font-mono animate-fade-in-up',
+      )}
       style="animation-delay: 150ms"
     >
-      <span class="transition-transform group-hover:-translate-x-1"
-        >&larr;</span
+      <span class="transition-transform group-hover:-translate-x-1">&larr;</span
       > cd ~
     </Link>
   </section>

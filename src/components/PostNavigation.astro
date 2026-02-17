@@ -46,7 +46,7 @@ const isSubpost = !!parentPost
         href={parentPost ? `/blog/${parentPost.id}#post-title` : '#'}
         class={cn(
           buttonVariants({ variant: 'outline' }),
-          'group flex size-full items-center justify-center border-dashed hover:border-primary/50 dark:hover:shadow-sm',
+          'group hover:border-primary/50 flex size-full items-center justify-center border-dashed dark:hover:shadow-sm',
           !parentPost && 'pointer-events-none cursor-not-allowed opacity-50',
         )}
       >

@@ -41,7 +41,7 @@ const blog = await getRecentPosts(SITE.featuredPostCount)
     </TerminalWindow>
 
     <h2
-      class="animate-fade-in-up text-xs font-mono text-muted-foreground uppercase tracking-widest"
+      class="animate-fade-in-up text-muted-foreground font-mono text-xs tracking-widest uppercase"
       style="animation-delay: 100ms"
     >
       // latest posts
@@ -64,7 +64,8 @@ const blog = await getRecentPosts(SITE.featuredPostCount)
     >
       <Link
         href="/blog"
-        class={buttonVariants({ variant: 'ghost' }) + ' group font-mono text-xs'}
+        class={buttonVariants({ variant: 'ghost' }) +
+          ' group font-mono text-xs'}
       >
         ls -a posts/ <span
           class="ml-1.5 transition-transform group-hover:translate-x-1"

@@ -16,22 +16,17 @@ const projects = await getAllProjects()
   <Breadcrumbs items={[{ label: 'About', icon: 'lucide:info' }]} />
 
   <section class="flex flex-col gap-y-8">
-    <TerminalWindow
-      title={`about — ${SITE.author}`}
-      class="animate-fade-in-up"
-    >
+    <TerminalWindow title={`about — ${SITE.author}`} class="animate-fade-in-up">
       <div class="space-y-2 text-sm">
         <div class="flex gap-2">
           <span class="text-primary shrink-0">~</span>
           <span class="text-muted-foreground shrink-0">$</span>
           <span>cat README.md</span>
         </div>
-        <div
-          class="mt-3 space-y-3 border-t pt-3 font-sans text-foreground/80"
-        >
+        <div class="text-foreground/80 mt-3 space-y-3 border-t pt-3 font-sans">
           <p>
-            Hey, I'm <strong class="text-foreground">{SITE.title}</strong> — a
-            developer passionate about building things for the web.
+            Hey, I'm <strong class="text-foreground">{SITE.title}</strong> — a developer
+            passionate about building things for the web.
           </p>
           <p>
             I write about programming, technology, and whatever catches my
@@ -52,7 +47,11 @@ const projects = await getAllProjects()
     </TerminalWindow>
 
     <div class="animate-fade-in-up" style="animation-delay: 150ms">
-      <h2 class="mb-4 text-xs font-mono text-muted-foreground uppercase tracking-widest">// projects</h2>
+      <h2
+        class="text-muted-foreground mb-4 font-mono text-xs tracking-widest uppercase"
+      >
+        // projects
+      </h2>
       <div class="flex flex-col gap-4">
         {projects.map((project) => <ProjectCard project={project} />)}
       </div>
