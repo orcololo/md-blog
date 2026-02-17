@@ -34,12 +34,18 @@ const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
 
   <div class="flex min-h-[calc(100vh-18rem)] flex-col gap-y-8">
     {
-      years.map((year) => (
-        <section class="flex flex-col gap-y-4">
-          <div class="font-medium">{year}</div>
+      years.map((year, yi) => (
+        <section
+          class="animate-fade-in-up flex flex-col gap-y-4"
+          style={`animation-delay: ${yi * 100}ms`}
+        >
+          <div class="font-mono text-xs text-muted-foreground">// {year}</div>
           <ul class="flex flex-col gap-4">
-            {postsByYear[year].map((post) => (
-              <li>
+            {postsByYear[year].map((post, pi) => (
+              <li
+                class="animate-fade-in-up"
+                style={`animation-delay: ${yi * 100 + (pi + 1) * 80}ms`}
+              >
                 <BlogCard entry={post} />
               </li>
             ))}

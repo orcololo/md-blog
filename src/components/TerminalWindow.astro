@@ -1,0 +1,27 @@
+---
+import { cn } from '@/lib/utils'
+
+interface Props {
+  title?: string
+  class?: string
+}
+
+const { title = 'terminal', class: className } = Astro.props
+---
+
+<div
+  class={cn(
+    'overflow-hidden border border-dashed bg-card font-mono',
+    className,
+  )}
+>
+  <div
+    class="flex items-center justify-between border-b border-dashed px-3 py-1.5"
+  >
+    <span class="text-muted-foreground text-xs">[<span class="text-primary">&#x2588;</span>] {title}</span>
+    <span class="text-muted-foreground text-xs">[<span class="hover:text-destructive cursor-default transition-colors">x</span>]</span>
+  </div>
+  <div class="p-4 sm:p-5">
+    <slot />
+  </div>
+</div>

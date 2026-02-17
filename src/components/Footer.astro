@@ -1,15 +1,17 @@
 ---
-import { SOCIAL_LINKS } from '@/consts'
+import { SITE, SOCIAL_LINKS } from '@/consts'
 import SocialIcons from './SocialIcons.astro'
 ---
 
-<footer
-  class="mx-auto mb-8 flex w-full max-w-3xl flex-col items-center justify-center gap-y-2 px-4 sm:mb-4 sm:flex-row sm:justify-between"
->
-  <div class="flex flex-wrap items-center justify-center gap-x-2 text-center">
-    <span class="text-muted-foreground text-sm">
-      &copy; {new Date().getFullYear()} All rights reserved.
+<footer class="mt-auto border-t border-dashed">
+  <div
+    class="mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-y-3 px-4 py-6 sm:flex-row sm:justify-between"
+  >
+    <span class="text-muted-foreground font-mono text-xs">
+      <span class="text-primary">&#x25B8;</span> {SITE.author} &copy; {new Date().getFullYear()}<span
+        class="animate-blink text-primary ml-0.5">_</span
+      >
     </span>
+    <SocialIcons links={SOCIAL_LINKS} />
   </div>
-  <SocialIcons links={SOCIAL_LINKS} />
 </footer>

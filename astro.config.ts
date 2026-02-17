@@ -65,7 +65,7 @@ export default defineConfig({
       [
         rehypeExpressiveCode,
         {
-          themes: ['github-light', 'github-dark'],
+          themes: ['vitesse-light', 'vitesse-dark'],
           plugins: [pluginCollapsibleSections(), pluginLineNumbers()],
           useDarkModeMediaQuery: false,
           themeCssSelector: (theme: ExpressiveCodeTheme) =>
@@ -113,8 +113,8 @@ export default defineConfig({
         rehypeShiki,
         {
           themes: {
-            light: 'github-light',
-            dark: 'github-dark',
+            light: 'vitesse-light',
+            dark: 'vitesse-dark',
           },
           inline: 'tailing-curly-colon',
         },

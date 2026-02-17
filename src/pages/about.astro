@@ -3,6 +3,8 @@ import Breadcrumbs from '@/components/Breadcrumbs.astro'
 import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import ProjectCard from '@/components/ProjectCard.astro'
+import TerminalWindow from '@/components/TerminalWindow.astro'
+import { SITE } from '@/consts'
 import Layout from '@/layouts/Layout.astro'
 import { getAllProjects } from '@/lib/data-utils'
 
@@ -13,32 +15,44 @@ const projects = await getAllProjects()
   <PageHead slot="head" title="About" />
   <Breadcrumbs items={[{ label: 'About', icon: 'lucide:info' }]} />
 
-  <section>
-    <div class="min-w-full">
-      <div class="prose mb-8">
-        <p class="mt-0">
-          astro-erudite is an opinionated, unstyled static blogging template
-          that prioritizes simplicity and performance, built with <Link
-            href="https://astro.build"
-            external
-            underline>Astro</Link
-          >, <Link href="https://tailwindcss.com" external underline
-            >Tailwind</Link
-          >, and <Link href="https://ui.shadcn.com" external underline
-            >shadcn/ui</Link
-          >. It provides a clean foundation for your content while being
-          extremely easy to customize.
-        </p>
-        <p>
-          To learn more about the philosophy behind this template, check out the
-          following blog post: <Link
-            href="/blog/the-state-of-static-blogs"
-            underline>The State of Static Blogs in 2024</Link
-          >.
-        </p>
+  <section class="flex flex-col gap-y-8">
+    <TerminalWindow
+      title={`about — ${SITE.author}`}
+      class="animate-fade-in-up"
+    >
+      <div class="space-y-2 text-sm">
+        <div class="flex gap-2">
+          <span class="text-primary shrink-0">~</span>
+          <span class="text-muted-foreground shrink-0">$</span>
+          <span>cat README.md</span>
+        </div>
+        <div
+          class="mt-3 space-y-3 border-t pt-3 font-sans text-foreground/80"
+        >
+          <p>
+            Hey, I'm <strong class="text-foreground">{SITE.title}</strong> — a
+            developer passionate about building things for the web.
+          </p>
+          <p>
+            I write about programming, technology, and whatever catches my
+            curiosity. This is my corner of the internet where I share what I
+            learn along the way.
+          </p>
+          <p>
+            Built with <Link href="https://astro.build" external underline
+              >Astro</Link
+            >, <Link href="https://tailwindcss.com" external underline
+              >Tailwind CSS</Link
+            >, and <Link href="https://ui.shadcn.com" external underline
+              >shadcn/ui</Link
+            >.
+          </p>
+        </div>
       </div>
+    </TerminalWindow>
 
-      <h2 class="mb-4 text-2xl font-medium">Example Projects Listing</h2>
+    <div class="animate-fade-in-up" style="animation-delay: 150ms">
+      <h2 class="mb-4 text-xs font-mono text-muted-foreground uppercase tracking-widest">// projects</h2>
       <div class="flex flex-col gap-4">
         {projects.map((project) => <ProjectCard project={project} />)}
       </div>

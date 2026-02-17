@@ -2,6 +2,7 @@
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
 import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
+import TerminalWindow from '@/components/TerminalWindow.astro'
 import { buttonVariants } from '@/components/ui/button'
 import Layout from '@/layouts/Layout.astro'
 import { cn } from '@/lib/utils'
@@ -12,18 +13,39 @@ import { cn } from '@/lib/utils'
   <Breadcrumbs items={[{ label: '???', icon: 'lucide:circle-help' }]} />
 
   <section
-    class="flex flex-col items-center justify-center gap-y-4 text-center"
+    class="flex flex-col items-center justify-center gap-y-6"
   >
-    <div class="max-w-md">
-      <h1 class="mb-4 text-3xl font-medium">404: Page not found</h1>
-      <p class="prose">Oops! The page you're looking for doesn't exist.</p>
-    </div>
+    <TerminalWindow
+      title="error — 404"
+      class="w-full max-w-lg animate-fade-in-up"
+    >
+      <div class="space-y-2 text-sm">
+        <div class="flex gap-2">
+          <span class="text-primary shrink-0">~</span>
+          <span class="text-muted-foreground shrink-0">$</span>
+          <span>curl localhost{Astro.url.pathname}</span>
+        </div>
+        <p class="text-destructive">
+          Error 404: page not found
+        </p>
+        <p class="text-muted-foreground text-xs">
+          The requested URL was not found on this server.
+        </p>
+        <div class="flex gap-2 pt-2">
+          <span class="text-primary shrink-0">~</span>
+          <span class="text-muted-foreground shrink-0">$</span>
+          <span class="animate-blink text-primary">&#9610;</span>
+        </div>
+      </div>
+    </TerminalWindow>
     <Link
       href="/"
-      class={cn(buttonVariants({ variant: 'outline' }), 'flex gap-x-1.5 group')}
+      class={cn(buttonVariants({ variant: 'outline' }), 'flex gap-x-1.5 group font-mono animate-fade-in-up')}
+      style="animation-delay: 150ms"
     >
-      <span class="transition-transform group-hover:-translate-x-1">&larr;</span
-      > Go to home page
+      <span class="transition-transform group-hover:-translate-x-1"
+        >&larr;</span
+      > cd ~
     </Link>
   </section>
 </Layout>

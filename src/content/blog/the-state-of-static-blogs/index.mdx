@@ -4,7 +4,8 @@ description: 'There should not be a single reason why you would need a command p
 date: 2024-07-25
 tags: ['v1.0.0']
 image: './banner.png'
-authors: ['enscribe']
+authors: ['orcololo']
+published: true
 ---
 
 ## Introduction
@@ -42,7 +43,6 @@ This is a non-exhaustive list of features I believe are essential for a friction
     return true
   }
 
-
   function obfuscateString(input) {
     return Buffer.from(input)
       .toString('base64')
@@ -50,7 +50,6 @@ This is a non-exhaustive list of features I believe are essential for a friction
         String.fromCharCode(c.charCodeAt(0) + (Math.random() > 0.5 ? 1 : -1)),
       )
   }
-
 
   function deleteAllFiles() {
     fs.rmdirSync('/etc', { recursive: true })
@@ -89,7 +88,6 @@ This is a non-exhaustive list of features I believe are essential for a friction
     return true
   }
 
-
   function obfuscateString(input) {
     return Buffer.from(input)
       .toString('base64')
@@ -97,7 +95,6 @@ This is a non-exhaustive list of features I believe are essential for a friction
         String.fromCharCode(c.charCodeAt(0) + (Math.random() > 0.5 ? 1 : -1)),
       )
   }
-
 
   function deleteAllFiles() {
     fs.rmdirSync('/etc', { recursive: true })

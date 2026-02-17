@@ -8,7 +8,7 @@ export async function getAllAuthors(): Promise<CollectionEntry<'authors'>[]> {
 export async function getAllPosts(): Promise<CollectionEntry<'blog'>[]> {
   const posts = await getCollection('blog')
   return posts
-    .filter((post) => !post.data.draft && !isSubpost(post.id))
+    .filter((post) => !post.data.draft && post.data.published && !isSubpost(post.id))
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 }
 
@@ -17,7 +17,7 @@ export async function getAllPostsAndSubposts(): Promise<
 > {
   const posts = await getCollection('blog')
   return posts
-    .filter((post) => !post.data.draft)
+    .filter((post) => !post.data.draft && post.data.published)
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 }
 
@@ -58,7 +58,8 @@ export async function getAdjacentPosts(currentId: string): Promise<{
         (post) =>
           isSubpost(post.id) &&
           getParentId(post.id) === parentId &&
-          !post.data.draft,
+          !post.data.draft &&
+          post.data.published,
       )
       .sort((a, b) => {
         const dateDiff = a.data.date.valueOf() - b.data.date.valueOf()
@@ -144,6 +145,7 @@ export async function getSubpostsForParent(
     .filter(
       (post) =>
         !post.data.draft &&
+        post.data.published &&
         isSubpost(post.id) &&
         getParentId(post.id) === parentId,
     )
