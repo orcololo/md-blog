@@ -29,17 +29,18 @@ export default defineConfig({
       port: 3000,
       cors: true,
       strictPort: false,
-      allowedHosts: ['.orcololo.com', 'blog.orcololo.com'],
+      allowedHosts: true,
     },
     server: {
       host: '0.0.0.0',
       cors: true,
-      allowedHosts: ['.orcololo.com', 'blog.orcololo.com'],
+      allowedHosts: true,
     },
   },
   server: {
     port: 3000,
     host: true,
+    allowedHosts: true,
   },
   devToolbar: {
     enabled: false,
