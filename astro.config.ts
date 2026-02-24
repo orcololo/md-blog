@@ -20,7 +20,7 @@ import type { ExpressiveCodeTheme } from 'rehype-expressive-code'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  site: 'https://vwww84ckc08owskcwcgksc8k.tucujulabs.com/',
+  site: 'https://blog.orcololo.com/',
   integrations: [mdx(), react(), sitemap(), icon()],
   vite: {
     plugins: [tailwindcss()],
@@ -29,18 +29,12 @@ export default defineConfig({
       port: 3000,
       cors: true,
       strictPort: false,
-      allowedHosts: [
-        '.tucujulabs.com',
-        'vwww84ckc08owskcwcgksc8k.tucujulabs.com',
-      ],
+      allowedHosts: ['.orcololo.com', 'blog.orcololo.com'],
     },
     server: {
       host: '0.0.0.0',
       cors: true,
-      allowedHosts: [
-        '.tucujulabs.com',
-        'vwww84ckc08owskcwcgksc8k.tucujulabs.com',
-      ],
+      allowedHosts: ['.orcololo.com', 'blog.orcololo.com'],
     },
   },
   server: {

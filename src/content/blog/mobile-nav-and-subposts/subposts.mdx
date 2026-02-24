@@ -29,23 +29,18 @@ This is a pretty elegant solution which requires no frontmatter configuration, n
 One of the more intricate parts of this update was rethinking navigation. The original `getAdjacentPosts(){:ts}` function assumed simple previous/next relationships. With subposts, we now have three distinct navigation contexts:
 
 <Callout variant="example">
-  Consider this structure:
-  ```
-  blog/
-    getting-started.mdx
-    react-tutorial/
-      index.mdx
-      components.mdx
-      state.mdx
-    advanced-patterns.mdx
-  ```
+  Consider this structure: ``` blog/ getting-started.mdx react-tutorial/
+  index.mdx components.mdx state.mdx advanced-patterns.mdx ```
+</Callout>
 
 Navigation depends on context:
 
-- From `getting-started.mdx`: next goes to `react-tutorial/index.mdx`
-- From `react-tutorial/components.mdx`: next goes to `state.mdx`, previous to `index.mdx`
-- From `react-tutorial/state.mdx`: previous goes to `components.mdx`, parent goes to `index.mdx`
-  </Callout>
+<Callout>
+  - From `getting-started.mdx`: next goes to `react-tutorial/index.mdx` - From
+  `react-tutorial/components.mdx`: next goes to `state.mdx`, previous to
+  `index.mdx` - From `react-tutorial/state.mdx`: previous goes to
+  `components.mdx`, parent goes to `index.mdx`
+</Callout>
 
 Here's how we handle this complexity:
 
