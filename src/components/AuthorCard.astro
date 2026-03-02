@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import type { SocialLink } from '@/types'
 import type { CollectionEntry } from 'astro:content'
 import SocialIcons from './SocialIcons.astro'
+import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
 
 interface Props {
   author: CollectionEntry<'authors'>
@@ -12,8 +13,11 @@ interface Props {
 
 const { author } = Astro.props
 const { name, avatar, bio, pronouns } = author.data
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
 const currentPath = Astro.url.pathname
-const isAuthorPage = currentPath === `/authors/${author.id}`
+const authorPath = getLocalePath(`/authors/${author.id}`, lang)
+const isAuthorPage = currentPath === authorPath
 
 const socialLinks: SocialLink[] = [
   author.data.website && { href: author.data.website, label: 'Website' },
@@ -29,13 +33,13 @@ const socialLinks: SocialLink[] = [
 >
   <div class="flex flex-wrap gap-4">
     <Link
-      href={`/authors/${author.id}`}
+      href={authorPath}
       class={cn('block', isAuthorPage && 'pointer-events-none')}
     >
       <AvatarComponent
         client:load
         src={avatar}
-        alt={`Avatar of ${name}`}
+        alt={`${t('authors.avatarOf')} ${name}`}
         fallback={name[0]}
         className={cn(
           'size-32 rounded-md [&>[data-slot="avatar-fallback"]]:rounded-md',

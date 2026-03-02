@@ -1,0 +1,298 @@
+---
+title: 'Coolify VPS Setup: Domínio Personalizado & SSL com Traefik e Cloudflare'
+description: 'Parte da série Coolify VPS — como configurar certificados SSL wildcard usando Traefik como reverse proxy e Cloudflare como provedor DNS, incluindo todos os problemas que encontrei pelo caminho.'
+date: 2026-02-28
+tags: ['coolify', 'traefik', 'cloudflare', 'devops', 'self-hosting']
+authors: ['orcololo']
+published: true
+lang: pt
+---
+
+## Bem-vindo à Série Coolify VPS
+
+Este é o primeiro post de uma série onde documento todo o processo de configuração de um VPS com [Coolify](https://coolify.io/) — desde o provisionamento inicial do servidor até o deploy de aplicações reais. Se você já pensou em hospedar suas próprias coisas mas se sentiu sobrecarregado com tantas peças envolvidas, essa série é pra você.
+
+Neste post, vamos encarar o que é provavelmente a parte mais complicada da configuração: **fazer um domínio personalizado funcionar com certificados SSL wildcard usando Traefik e Cloudflare**. A documentação oficial dá um ponto de partida, mas montar o quadro completo — especialmente para certs wildcard — me tomou muito mais tempo do que deveria. Então aqui está tudo que aprendi, todos os erros que encontrei e a configuração final que realmente funciona.
+
+## O que é o Traefik e por que o Coolify o utiliza?
+
+[Traefik](https://traefik.io/) é um reverse proxy e load balancer open-source projetado para aplicações em containers. Ele se integra perfeitamente com Docker — detectando serviços automaticamente, configurando rotas e protegendo conexões com SSL. Foi projetado para ambientes dinâmicos e self-hosted, adaptando-se a mudanças em tempo real, o que o torna ideal para o Coolify.
+
+O Coolify usa o Traefik internamente para gerenciar todo o tráfego HTTP/HTTPS e automatizar a emissão de certificados SSL via Let's Encrypt. Meus objetivos eram:
+
+1. Apontar um domínio personalizado (`your-domain.tech`) para meu servidor usando Cloudflare como provedor DNS.
+2. Habilitar certificados SSL wildcard para o domínio e todos os subdomínios (ex.: `*.your-domain.tech`).
+3. Automatizar a emissão e renovação de certificados através do desafio DNS-01 do Let's Encrypt.
+
+Simples no papel. Na prática, nem tanto.
+
+### Problemas que encontrei
+
+1. **Configuração DNS incorreta:** O Let's Encrypt ficava retornando erros como:
+
+   ```bash title="Erro do Let's Encrypt" showLineNumbers=false
+   acme: error: 400 :: urn:ietf:params:acme:error:dns :: no valid A records found for your-domain.tech
+   ```
+
+   Mesmo tendo adicionado os registros DNS no Cloudflare, eles não estavam propagando como esperado. Esse é um problema comum com desafios DNS via Cloudflare.
+
+2. **Permissões erradas no token da API do Cloudflare:** O token que criei inicialmente não tinha os escopos corretos, fazendo o Traefik falhar durante o desafio ACME DNS-01:
+
+   ```bash title="Erro: zona não encontrada" showLineNumbers=false
+   acme: error presenting token: Cloudflare: failed to find zone your-domain.tech: Zone could not be found
+   ```
+
+   A documentação de tokens da API do Cloudflare explica as permissões necessárias, mas é fácil errar a combinação exata.
+
+3. **Misturar desafios HTTP e DNS:** Incluir ambos os tipos de desafio na configuração do Traefik causou comportamento imprevisível e quebrou a emissão de certificados. O desafio DNS deve ser usado exclusivamente — misturá-los só causa confusão.
+
+4. **Documentação fragmentada:** Entre a documentação do Coolify, do Traefik e a referência da API do Cloudflare, nenhuma fonte tinha o quadro completo para SSL wildcard com Coolify. Este post é minha tentativa de consolidar tudo.
+
+## A solução: passo a passo
+
+### 1. Configurar registros DNS no Cloudflare
+
+Certifique-se de que seu domínio está gerenciado no Cloudflare e que os registros DNS estão configurados corretamente:
+
+- **Registros A:**
+  - `your-domain.tech` → `<IP do Servidor>`
+  - `*.your-domain.tech` → `<IP do Servidor>`
+- **Status do Proxy:** Configure ambos os registros como **DNS Only** (nuvem cinza) para que o Traefik gerencie o SSL em vez do Cloudflare.
+
+> **Atenção:** Se você deixar o proxy do Cloudflare ativado (nuvem laranja), o Cloudflare vai gerenciar o SSL no lugar do Traefik, causando conflitos na emissão de certificados. Se você usar o proxy com nuvem laranja, certifique-se de configurar o modo SSL/TLS do Cloudflare como **Full** ou **Full (Strict)** — caso contrário você terá loops de redirecionamento. Mas por simplicidade, mantenha cinza e deixe o Traefik cuidar de tudo.
+
+### 2. Gerar um token da API do Cloudflare
+
+O Traefik precisa de um token da API do Cloudflare para autenticar e criar registros DNS TXT para o desafio DNS-01 do Let's Encrypt. Crie um token personalizado com estas permissões:
+
+- **Zone / DNS / Edit** — Permite que o Traefik crie e delete registros DNS TXT para o desafio.
+- **Zone / Zone / Read** — Permite que o Traefik descubra e leia suas zonas DNS.
+
+Veja como fazer:
+
+1. Acesse a [página de Tokens da API do Cloudflare](https://dash.cloudflare.com/profile/api-tokens).
+2. Clique em **Create Token** e escolha o template **Edit zone DNS** (ou crie um token personalizado).
+3. Configure as permissões listadas acima.
+4. Em **Zone Resources**, restrinja o token ao seu domínio específico (`your-domain.tech`) para maior segurança.
+5. Salve o token em um lugar seguro — você vai precisar dele no próximo passo.
+
+### 3. Armazenar credenciais em variáveis de ambiente
+
+Mantenha suas credenciais do Cloudflare fora do arquivo compose. Se você está rodando o Traefik standalone (fora do Coolify), crie um arquivo `.env` no mesmo diretório do seu `docker-compose.yml`:
+
+```bash title=".env" showLineNumbers=false
+CF_API_EMAIL=seu-email-cloudflare@exemplo.com
+CF_DNS_API_TOKEN=seu-token-api-aqui
+```
+
+O Docker Compose automaticamente lê variáveis do `.env`, então suas credenciais ficam fora do controle de versão e fora do arquivo compose. No caso do Coolify, você vai configurar o `CF_DNS_API_TOKEN` diretamente na configuração de ambiente do proxy (veja o arquivo compose abaixo).
+
+### 4. Configurar o Traefik
+
+Uma abordagem alternativa é usar um arquivo separado `traefik.yml` de configuração estática junto com o `docker-compose.yml`. O Coolify, porém, passa tudo como flags de linha de comando diretamente no arquivo compose. Ambas as abordagens funcionam — a abordagem só-compose é o que o Coolify espera, então é isso que vamos usar aqui.
+
+Aqui está a configuração do Traefik adaptada para o Coolify:
+
+```yaml title="docker-compose.yml"
+version: '3.8'
+networks:
+  coolify:
+    external: true
+services:
+  traefik:
+    container_name: coolify-proxy
+    image: 'traefik:v3.1'
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - TZ=America/Sao_Paulo
+      - CF_DNS_API_TOKEN=<seu-token-cloudflare> # Substitua pelo seu token
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    networks:
+      - coolify
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+      - '8080:8080'
+    healthcheck:
+      test: 'wget -qO- http://localhost:80/ping || exit 1'
+      interval: 4s
+      timeout: 2s
+      retries: 5
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+      - '/data/coolify/proxy:/traefik'
+    command:
+      - '--ping=true'
+      - '--ping.entrypoint=http'
+      - '--api.dashboard=true'
+      - '--api.insecure=false'
+      - '--entrypoints.http.address=:80'
+      - '--entrypoints.https.address=:443'
+      - '--entrypoints.http.http.encodequerysemicolons=true'
+      - '--entryPoints.http.http2.maxConcurrentStreams=50'
+      - '--entrypoints.https.http.encodequerysemicolons=true'
+      - '--entryPoints.https.http2.maxConcurrentStreams=50'
+      - '--entrypoints.https.http3'
+      - '--providers.docker.exposedbydefault=false'
+      - '--providers.file.directory=/traefik/dynamic/'
+      - '--providers.file.watch=true'
+      - '--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare'
+      - '--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=0'
+      - '--certificatesresolvers.letsencrypt.acme.storage=/traefik/acme.json'
+      - '--providers.docker=true'
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.entrypoints=http
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.tls.certresolver=letsencrypt
+      - traefik.http.routers.traefik.tls.domains[0].main=your-domain.tech
+      - traefik.http.routers.traefik.tls.domains[0].sans=*.your-domain.tech
+      - traefik.http.services.traefik.loadbalancer.server.port=8080
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.gzip.compress=true
+      - coolify.managed=true
+      - coolify.proxy=true
+```
+
+Algumas observações importantes:
+
+1. **`security_opt: no-new-privileges:true`** — Uma medida de hardening de segurança. Impede que os processos do container ganhem privilégios adicionais após a inicialização, o que é uma boa prática para qualquer serviço exposto à internet.
+2. **Variável de ambiente `TZ`** — Define o fuso horário do container para garantir que logs e timestamps de certificados estejam no seu horário local. Ajuste para o seu (ex.: `Europe/Amsterdam`, `America/New_York`).
+3. **Use o desafio DNS-01 exclusivamente.** _Não_ inclua `httpchallenge` junto. Misturar tipos de desafio causa conflitos e quebra a emissão de certificados.
+4. **`delaybeforecheck=0`** pula atrasos desnecessários durante a validação DNS. Em setups standalone você pode querer um `delayBeforeCheck` de 10 segundos, mas com a infraestrutura do Coolify isso não é necessário.
+5. **`exposedbydefault=false`** — O Traefik não vai rotear automaticamente para todo container Docker. Apenas containers com label `traefik.enable=true` serão expostos, o que é um padrão de segurança sensato.
+6. Substitua toda ocorrência de `your-domain.tech` pelo seu domínio real.
+
+> **Configuração baseada em arquivo vs. flags de comando:** Uma abordagem alternativa é colocar a configuração estática (entry points, providers, certificate resolvers) em um arquivo `traefik.yml` separado montado no container. Isso é mais limpo para setups standalone. O Coolify, por outro lado, passa tudo como flags `--command` no arquivo compose, o que mantém a configuração em um só lugar e facilita o gerenciamento pelo Coolify. Se você está configurando o Traefik fora do Coolify, a abordagem baseada em arquivo vale a pena considerar.
+
+### 5. Use o staging do Let's Encrypt primeiro
+
+Este é um passo crítico que gostaria de ter seguido desde o início: **sempre teste com o servidor staging do Let's Encrypt antes de ir para produção**. O servidor staging tem limites de taxa muito mais generosos, então você não será bloqueado enquanto debugga sua configuração.
+
+Adicione a flag `caServer` para usar o ambiente staging:
+
+```bash title="Servidor CA staging" showLineNumbers=false
+--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+```
+
+Certificados staging não são confiáveis pelos navegadores — você verá um aviso de segurança. Isso é esperado. O objetivo é confirmar que o desafio DNS está funcionando corretamente sem gastar os limites de taxa de produção.
+
+### 6. Reiniciar e verificar com um serviço de teste
+
+Depois de aplicar a configuração, inicie o Traefik:
+
+```bash title="Terminal" showLineNumbers=false
+docker compose up -d --force-recreate
+docker logs -f coolify-proxy
+```
+
+É uma boa ideia fazer deploy de um serviço de teste leve para verificar se o Traefik está roteando tráfego e emitindo certificados corretamente. A imagem `traefik/whoami` é perfeita para isso — é um servidor HTTP pequeno que retorna informações da requisição:
+
+```yaml title="whoami/docker-compose.yml"
+services:
+  whoami:
+    container_name: simple-service
+    image: traefik/whoami
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.whoami.rule=Host(`test.your-domain.tech`)'
+      - 'traefik.http.routers.whoami.entrypoints=websecure'
+      - 'traefik.http.routers.whoami.tls=true'
+      - 'traefik.http.routers.whoami.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.whoami.loadbalancer.server.port=80'
+    networks:
+      - coolify
+
+networks:
+  coolify:
+    external: true
+```
+
+Certifique-se de ter um registro DNS para `test.your-domain.tech` apontando para seu servidor, então:
+
+```bash title="Terminal" showLineNumbers=false
+docker compose -f whoami/docker-compose.yml up -d
+```
+
+Acesse `https://test.your-domain.tech` no seu navegador. Como você ainda está no staging, verá um aviso de certificado — isso é normal. O importante é que o certificado foi emitido e que a página carrega com os dados do `whoami`. Se isso acontecer, seu desafio DNS e roteamento estão funcionando.
+
+### 7. Mudar para certificados de produção
+
+Quando tudo funcionar no staging, você precisa:
+
+1. **Parar o Traefik** e remover os dados de certificado staging para que o Traefik solicite novos certs da CA de produção:
+
+   ```bash title="Terminal" showLineNumbers=false
+   docker compose down
+   rm /data/coolify/proxy/acme.json
+   ```
+
+2. **Remover a flag `caserver`** da seção de comando (ou trocar para a URL de produção). O servidor de produção é o padrão, então você pode simplesmente deletar a linha.
+
+3. **Iniciar o Traefik novamente:**
+
+   ```bash title="Terminal" showLineNumbers=false
+   docker compose up -d
+   ```
+
+4. **Visite seu serviço de teste novamente** e confirme que agora recebe um certificado confiável do Let's Encrypt (sem aviso do navegador).
+
+> **Nota sobre cache do navegador:** Alguns navegadores mantêm certificados servidos anteriormente por um tempo. Se você ainda ver o certificado staging, tente uma janela anônima ou um navegador diferente.
+
+### 8. Limpar o serviço de teste
+
+Depois de confirmar que os certificados de produção estão funcionando, remova o serviço de teste:
+
+```bash title="Terminal" showLineNumbers=false
+docker compose -f whoami/docker-compose.yml down
+rm -rf whoami
+```
+
+Isso mantém sua configuração limpa com apenas os serviços essenciais rodando.
+
+## Solução de problemas
+
+As coisas provavelmente vão dar errado na primeira tentativa — comigo deram. Aqui estão os problemas mais comuns e como resolvê-los:
+
+### Zona DNS não encontrada
+
+- Certifique-se de que seu token da API tem as permissões corretas (`Zone / DNS / Edit` e `Zone / Zone / Read`) e está restrito ao domínio certo.
+- Verifique se os nameservers do seu domínio estão realmente apontando para o Cloudflare.
+
+### Nenhum registro A válido encontrado
+
+- Confira os registros DNS no Cloudflare e verifique a propagação usando [DNS Checker](https://dnschecker.org/) ou `nslookup`.
+- Tenha em mente que a propagação DNS pode levar de alguns minutos a 48 horas.
+
+### Token da API inválido
+
+- Regenere o token com as permissões corretas e atualize `CF_DNS_API_TOKEN` na sua configuração.
+
+### Ainda recebendo certificados staging após mudar para produção
+
+- Você **precisa** deletar o arquivo `acme.json` e reiniciar o Traefik — caso contrário ele não vai solicitar novos certificados da CA de produção. Alguns navegadores também fazem cache de certificados servidos anteriormente. Tente uma janela anônima ou um navegador diferente.
+
+### Dashboard do Traefik não carrega na porta 8080
+
+- Certifique-se de que a porta 8080 não está bloqueada pelo firewall do host ou pelo security group do provedor de nuvem. Você pode verificar se o container está rodando com `docker ps` e checar os logs com `docker logs coolify-proxy`.
+
+### Loops de redirecionamento com proxy do Cloudflare ativado
+
+- Se você optar por usar o proxy com nuvem laranja do Cloudflare, certifique-se de configurar o modo de criptografia SSL/TLS como **Full** ou **Full (Strict)** no painel do Cloudflare. Deixar em **Flexible** causa loops de redirecionamento infinitos. A correção mais simples é desligar o proxy (nuvem cinza) e deixar o Traefik gerenciar o SSL de ponta a ponta.
+
+## Recursos úteis
+
+- [Coolify Wildcard Certificate Docs](https://coolify.io/docs/knowledge-base/traefik/wildcard-certificates) — Guia oficial do Coolify para SSL wildcard.
+- [Traefik ACME DNS Providers](https://doc.traefik.io/traefik/https/acme/#providers) — Lista completa de provedores DNS suportados. Os mesmos passos se aplicam a outros provedores com pequenas mudanças na configuração.
+- [Cloudflare API Token Documentation](https://developers.cloudflare.com/api/tokens/create/) — Como criar e limitar tokens da API.
+- [Ananthan2k](https://ananthanandanan.vercel.app/blog/setting-up-coolify-with-a-custom-domain-and-ssl-certificates-using-traefik-and-cloudflare-a-comprehensive-guide) - Setting Up Coolify with a Custom Domain and SSL Certificates Using Traefik and Cloudflare - A Comprehensive Guide
+
+## Próximos passos
+
+A parte do domínio e SSL está resolvida. O maior erro é misturar desafios HTTP e DNS — use apenas DNS-01 e você vai evitar a maioria das dores de cabeça. E sério, use o servidor staging primeiro.
+
+Este é apenas o começo da série Coolify VPS. Nos próximos posts, vou cobrir o resto da configuração: deploy de aplicações, configuração de bancos de dados, setup de backups automatizados e mais. Fique ligado.

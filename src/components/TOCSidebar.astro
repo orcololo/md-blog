@@ -3,6 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import type { TOCSection } from '@/lib/data-utils'
 import { getParentId, isSubpost } from '@/lib/data-utils'
 import { cn, getHeadingMargin } from '@/lib/utils'
+import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 
 type Props = {
   sections: TOCSection[]
@@ -12,6 +13,8 @@ type Props = {
 const { sections, currentPostId } = Astro.props
 const isCurrentSubpost = isSubpost(currentPostId)
 const parentId = isCurrentSubpost ? getParentId(currentPostId) : currentPostId
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
 ---
 
 {
@@ -27,7 +30,7 @@ const parentId = isCurrentSubpost ? getParentId(currentPostId) : currentPostId
         data-toc-scroll-area
       >
         <div class="flex flex-col gap-2 px-4">
-          <span class="text-lg font-medium">Table of Contents</span>
+          <span class="text-lg font-medium">{t('toc.tableOfContents')}</span>
           {sections.map((section, index) => {
             const isFirstSubpost =
               section.type === 'subpost' &&
@@ -39,7 +42,7 @@ const parentId = isCurrentSubpost ? getParentId(currentPostId) : currentPostId
                   <div class="mt-2 flex items-center gap-2">
                     <div class="bg-border h-px flex-1" />
                     <span class="text-muted-foreground text-xs font-medium">
-                      Subposts
+                      {t('toc.subposts')}
                     </span>
                     <div class="bg-border h-px flex-1" />
                   </div>

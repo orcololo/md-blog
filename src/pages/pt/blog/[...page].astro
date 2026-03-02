@@ -7,14 +7,14 @@ import { SITE } from '@/consts'
 import Layout from '@/layouts/Layout.astro'
 import { getAllPosts, groupPostsByYear } from '@/lib/data-utils'
 import type { PaginateFunction } from 'astro'
-import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
+import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 
 export async function getStaticPaths({
   paginate,
 }: {
   paginate: PaginateFunction
 }) {
-  const allPosts = await getAllPosts('en')
+  const allPosts = await getAllPosts('pt')
   return paginate(allPosts, { pageSize: SITE.postsPerPage })
 }
 
@@ -30,7 +30,7 @@ const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
   <PageHead slot="head" title={t('blog.title')} />
   <Breadcrumbs
     items={[
-      { label: t('blog.title'), href: getLocalePath('/blog', lang), icon: 'lucide:library-big' },
+      { label: t('blog.title'), href: '/pt/blog', icon: 'lucide:library-big' },
       { label: `${t('blog.page')} ${page.currentPage}`, icon: 'lucide:book-copy' },
     ]}
   />
@@ -61,7 +61,7 @@ const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
   <PaginationComponent
     currentPage={page.currentPage}
     totalPages={page.lastPage}
-    baseUrl={`${getLocalePath('/blog', lang)}/`}
+    baseUrl="/pt/blog/"
     client:load
   />
 </Layout>

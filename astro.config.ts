@@ -21,6 +21,13 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   site: 'https://blog.orcololo.com/',
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'pt'],
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
   integrations: [mdx(), react(), sitemap(), icon()],
   vite: {
     plugins: [tailwindcss()],

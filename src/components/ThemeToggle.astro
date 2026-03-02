@@ -1,18 +1,22 @@
 ---
 import { Button } from '@/components/ui/button'
 import { Icon } from 'astro-icon/components'
+import { getLangFromUrl, useTranslations } from '@/i18n/utils'
+
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
 ---
 
 <Button
   id="theme-toggle"
   variant="ghost"
   size="icon"
-  title="Toggle theme"
+  title={t('theme.toggle')}
   className="-my-2 -me-2 size-8"
 >
   <Icon name="lucide:sun" class="size-4 dark:hidden" />
   <Icon name="lucide:moon" class="absolute hidden size-4 dark:block" />
-  <span class="sr-only">Toggle theme</span>
+  <span class="sr-only">{t('theme.toggle')}</span>
 </Button>
 
 <script is:inline data-astro-rerun>

@@ -14,6 +14,7 @@ const blog = defineCollection({
       authors: z.array(z.string()).optional(),
       published: z.boolean().default(false),
       draft: z.boolean().optional(),
+      lang: z.enum(['en', 'pt']).default('en'),
     }),
 })
 

@@ -3,9 +3,12 @@ import Link from '@/components/Link.astro'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Icon } from 'astro-icon/components'
+import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
 
 const { newerPost, olderPost, parentPost } = Astro.props
 const isSubpost = !!parentPost
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
 ---
 
 <nav
@@ -15,7 +18,7 @@ const isSubpost = !!parentPost
   )}
 >
   <Link
-    href={olderPost ? `/blog/${olderPost.id}#post-title` : '#'}
+    href={olderPost ? `${getLocalePath('/blog/', lang)}${olderPost.id}#post-title` : '#'}
     class={cn(
       buttonVariants({ variant: 'outline' }),
       'group flex items-center justify-start size-full border-dashed hover:border-primary/50 dark:hover:shadow-sm',
@@ -29,12 +32,12 @@ const isSubpost = !!parentPost
     />
     <div class="flex flex-col items-start overflow-hidden text-wrap">
       <span class="text-muted-foreground text-left text-xs">
-        {isSubpost ? 'Previous Subpost' : 'Previous Post'}
+        {isSubpost ? t('nav.previousSubpost') : t('nav.previousPost')}
       </span>
       <span class="w-full text-left text-sm text-balance text-ellipsis">
         {
           olderPost?.data.title ||
-            (isSubpost ? 'No older subpost' : "You're at the oldest post!")
+            (isSubpost ? t('nav.noOlderSubpost') : t('nav.oldestPost'))
         }
       </span>
     </div>
@@ -43,7 +46,7 @@ const isSubpost = !!parentPost
   {
     isSubpost && (
       <Link
-        href={parentPost ? `/blog/${parentPost.id}#post-title` : '#'}
+        href={parentPost ? `${getLocalePath('/blog/', lang)}${parentPost.id}#post-title` : '#'}
         class={cn(
           buttonVariants({ variant: 'outline' }),
           'group hover:border-primary/50 flex size-full items-center justify-center border-dashed dark:hover:shadow-sm',
@@ -56,10 +59,10 @@ const isSubpost = !!parentPost
         />
         <div class="flex flex-col items-center overflow-hidden text-wrap">
           <span class="text-muted-foreground text-center text-xs">
-            Parent Post
+            {t('nav.parentPost')}
           </span>
           <span class="w-full text-center text-sm text-balance text-ellipsis">
-            {parentPost?.data.title || 'No parent post'}
+            {parentPost?.data.title || t('nav.noParentPost')}
           </span>
         </div>
       </Link>
@@ -67,7 +70,7 @@ const isSubpost = !!parentPost
   }
 
   <Link
-    href={newerPost ? `/blog/${newerPost.id}#post-title` : '#'}
+    href={newerPost ? `${getLocalePath('/blog/', lang)}${newerPost.id}#post-title` : '#'}
     class={cn(
       buttonVariants({ variant: 'outline' }),
       'group flex items-center justify-end size-full border-dashed hover:border-primary/50 dark:hover:shadow-sm',
@@ -77,12 +80,12 @@ const isSubpost = !!parentPost
   >
     <div class="flex flex-col items-end overflow-hidden text-wrap">
       <span class="text-muted-foreground text-right text-xs">
-        {isSubpost ? 'Next Subpost' : 'Next Post'}
+        {isSubpost ? t('nav.nextSubpost') : t('nav.nextPost')}
       </span>
       <span class="w-full text-right text-sm text-balance text-ellipsis">
         {
           newerPost?.data.title ||
-            (isSubpost ? 'No newer subpost' : "You're at the newest post!")
+            (isSubpost ? t('nav.noNewerSubpost') : t('nav.newestPost'))
         }
       </span>
     </div>

@@ -6,11 +6,11 @@ import { badgeVariants } from '@/components/ui/badge'
 import Layout from '@/layouts/Layout.astro'
 import { getSortedTags } from '@/lib/data-utils'
 import { Icon } from 'astro-icon/components'
-import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
+import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 
 const lang = getLangFromUrl(Astro.url)
 const t = useTranslations(lang)
-const sortedTags = await getSortedTags('en')
+const sortedTags = await getSortedTags('pt')
 ---
 
 <Layout class="max-w-3xl">
@@ -22,7 +22,7 @@ const sortedTags = await getSortedTags('en')
       {
         sortedTags.map(({ tag, count }) => (
           <Link
-            href={`${getLocalePath('/tags', lang)}/${tag}`}
+            href={`/pt/tags/${tag}`}
             class={badgeVariants({ variant: 'muted' })}
           >
             <Icon name="lucide:hash" class="size-3" />

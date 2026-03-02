@@ -5,7 +5,7 @@ import Breadcrumbs from '@/components/Breadcrumbs.astro'
 import PageHead from '@/components/PageHead.astro'
 import Layout from '@/layouts/Layout.astro'
 import { getAllAuthors, getPostsByAuthor } from '@/lib/data-utils'
-import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
+import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 
 export async function getStaticPaths() {
   const authors = await getAllAuthors()
@@ -30,7 +30,7 @@ const authorPosts = await getPostsByAuthor(author.id, lang)
   />
   <Breadcrumbs
     items={[
-      { href: getLocalePath('/authors', lang), label: t('authors.title'), icon: 'lucide:users' },
+      { href: '/pt/authors', label: t('authors.title'), icon: 'lucide:users' },
       { label: author.data.name, icon: 'lucide:user' },
     ]}
   />

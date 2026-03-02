@@ -6,6 +6,10 @@ import TerminalWindow from '@/components/TerminalWindow.astro'
 import { buttonVariants } from '@/components/ui/button'
 import Layout from '@/layouts/Layout.astro'
 import { cn } from '@/lib/utils'
+import { getLangFromUrl, useTranslations } from '@/i18n/utils'
+
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
 ---
 
 <Layout class="max-w-3xl">
@@ -23,9 +27,9 @@ import { cn } from '@/lib/utils'
           <span class="text-muted-foreground shrink-0">$</span>
           <span>curl localhost{Astro.url.pathname}</span>
         </div>
-        <p class="text-destructive">Error 404: page not found</p>
+        <p class="text-destructive">{t('404.error')}</p>
         <p class="text-muted-foreground text-xs">
-          The requested URL was not found on this server.
+          {t('404.description')}
         </p>
         <div class="flex gap-2 pt-2">
           <span class="text-primary shrink-0">~</span>

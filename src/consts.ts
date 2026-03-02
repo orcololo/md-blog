@@ -1,4 +1,5 @@
 import type { IconMap, SocialLink, Site } from '@/types'
+import type { Lang } from '@/i18n/translations'
 
 export const SITE: Site = {
   title: 'Orcololo',
@@ -25,6 +26,25 @@ export const NAV_LINKS: SocialLink[] = [
     label: 'about',
   },
 ]
+
+export const NAV_LINKS_PT: SocialLink[] = [
+  {
+    href: '/pt/blog',
+    label: 'blog',
+  },
+  {
+    href: '/pt/authors',
+    label: 'autores',
+  },
+  {
+    href: '/pt/about',
+    label: 'sobre',
+  },
+]
+
+export function getNavLinks(lang: Lang): SocialLink[] {
+  return lang === 'pt' ? NAV_LINKS_PT : NAV_LINKS
+}
 
 export const SOCIAL_LINKS: SocialLink[] = [
   {

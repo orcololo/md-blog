@@ -30,7 +30,7 @@ import { render } from 'astro:content'
 import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
 
 export async function getStaticPaths() {
-  const posts = await getAllPostsAndSubposts('en')
+  const posts = await getAllPostsAndSubposts('pt')
   return posts.map((post) => ({
     params: { id: post.id },
     props: post,
