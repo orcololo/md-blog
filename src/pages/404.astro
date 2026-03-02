@@ -4,9 +4,9 @@ import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import TerminalWindow from '@/components/TerminalWindow.astro'
 import { buttonVariants } from '@/components/ui/button'
+import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 import Layout from '@/layouts/Layout.astro'
 import { cn } from '@/lib/utils'
-import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 
 const lang = getLangFromUrl(Astro.url)
 const t = useTranslations(lang)

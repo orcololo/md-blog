@@ -5,9 +5,9 @@ import PageHead from '@/components/PageHead.astro'
 import ProjectCard from '@/components/ProjectCard.astro'
 import TerminalWindow from '@/components/TerminalWindow.astro'
 import { SITE } from '@/consts'
+import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 import Layout from '@/layouts/Layout.astro'
 import { getAllProjects } from '@/lib/data-utils'
-import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 
 const lang = getLangFromUrl(Astro.url)
 const t = useTranslations(lang)
@@ -28,16 +28,19 @@ const projects = await getAllProjects()
         </div>
         <div class="text-foreground/80 mt-3 space-y-3 border-t pt-3 font-sans">
           <p>
-            {t('about.intro')} <strong class="text-foreground">{SITE.title}</strong> {t('about.description')}
+            {t('about.intro')}
+            <strong class="text-foreground">{SITE.title}</strong>
+            {t('about.description')}
           </p>
           <p>
             {t('about.bio')}
           </p>
           <p>
-            {t('about.builtWith')} <Link href="https://astro.build" external underline
-              >Astro</Link
-            >, <Link href="https://tailwindcss.com" external underline
-              >Tailwind CSS</Link
+            {t('about.builtWith')}
+            <Link href="https://astro.build" external underline>Astro</Link>, <Link
+              href="https://tailwindcss.com"
+              external
+              underline>Tailwind CSS</Link
             >, e <Link href="https://ui.shadcn.com" external underline
               >shadcn/ui</Link
             >.

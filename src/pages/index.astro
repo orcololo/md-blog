@@ -5,9 +5,9 @@ import PageHead from '@/components/PageHead.astro'
 import TerminalWindow from '@/components/TerminalWindow.astro'
 import { buttonVariants } from '@/components/ui/button'
 import { SITE } from '@/consts'
+import { getLangFromUrl, getLocalePath, useTranslations } from '@/i18n/utils'
 import Layout from '@/layouts/Layout.astro'
 import { getRecentPosts } from '@/lib/data-utils'
-import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
 
 const lang = getLangFromUrl(Astro.url)
 const t = useTranslations(lang)
@@ -70,8 +70,8 @@ const blog = await getRecentPosts(SITE.featuredPostCount, lang)
         class={buttonVariants({ variant: 'ghost' }) +
           ' group font-mono text-xs'}
       >
-        {t('home.viewAll')} <span
-          class="ml-1.5 transition-transform group-hover:translate-x-1"
+        {t('home.viewAll')}
+        <span class="ml-1.5 transition-transform group-hover:translate-x-1"
           >&rarr;</span
         >
       </Link>

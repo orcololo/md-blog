@@ -1,6 +1,7 @@
 ---
 import Link from '@/components/Link.astro'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { getLangFromUrl, getLocalePath, useTranslations } from '@/i18n/utils'
 import {
   getCombinedReadingTime,
   getParentId,
@@ -11,7 +12,6 @@ import {
   isSubpost,
 } from '@/lib/data-utils'
 import { Icon } from 'astro-icon/components'
-import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
 
 const { parentId } = Astro.props
 const currentPostId = Astro.params.id as string
@@ -75,7 +75,8 @@ const subpostsWithReadingTime = await Promise.all(
                             activePostReadingTime && (
                             <span>
                               {' '}
-                              ({activePostCombinedReadingTime} {t('post.total')})
+                              ({activePostCombinedReadingTime} {t('post.total')}
+                              )
                             </span>
                           )}
                       </span>
@@ -104,7 +105,8 @@ const subpostsWithReadingTime = await Promise.all(
                             activePostReadingTime && (
                             <span>
                               {' '}
-                              ({activePostCombinedReadingTime} {t('post.total')})
+                              ({activePostCombinedReadingTime} {t('post.total')}
+                              )
                             </span>
                           )}
                       </span>

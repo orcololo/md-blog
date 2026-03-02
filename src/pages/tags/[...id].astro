@@ -2,9 +2,9 @@
 import BlogCard from '@/components/BlogCard.astro'
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
 import PageHead from '@/components/PageHead.astro'
+import { getLangFromUrl, getLocalePath, useTranslations } from '@/i18n/utils'
 import Layout from '@/layouts/Layout.astro'
 import { getAllTags, getPostsByTag } from '@/lib/data-utils'
-import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
 
 export async function getStaticPaths() {
   const tagMap = await getAllTags('en')
@@ -38,7 +38,11 @@ const t = useTranslations(lang)
   />
   <Breadcrumbs
     items={[
-      { href: getLocalePath('/tags', lang), label: t('tags.title'), icon: 'lucide:tags' },
+      {
+        href: getLocalePath('/tags', lang),
+        label: t('tags.title'),
+        icon: 'lucide:tags',
+      },
       { label: tag, icon: 'lucide:tag' },
     ]}
   />

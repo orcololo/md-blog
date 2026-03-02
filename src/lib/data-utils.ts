@@ -6,23 +6,32 @@ export async function getAllAuthors(): Promise<CollectionEntry<'authors'>[]> {
   return await getCollection('authors')
 }
 
-export async function getAllPosts(lang?: Lang): Promise<CollectionEntry<'blog'>[]> {
+export async function getAllPosts(
+  lang?: Lang,
+): Promise<CollectionEntry<'blog'>[]> {
   const posts = await getCollection('blog')
   return posts
     .filter(
-      (post) => !post.data.draft && post.data.published && !isSubpost(post.id)
-        && (!lang || post.data.lang === lang),
+      (post) =>
+        !post.data.draft &&
+        post.data.published &&
+        !isSubpost(post.id) &&
+        (!lang || post.data.lang === lang),
     )
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 }
 
-export async function getAllPostsAndSubposts(lang?: Lang): Promise<
-  CollectionEntry<'blog'>[]
-> {
+export async function getAllPostsAndSubposts(
+  lang?: Lang,
+): Promise<CollectionEntry<'blog'>[]> {
   const posts = await getCollection('blog')
   return posts
-    .filter((post) => !post.data.draft && post.data.published
-      && (!lang || post.data.lang === lang))
+    .filter(
+      (post) =>
+        !post.data.draft &&
+        post.data.published &&
+        (!lang || post.data.lang === lang),
+    )
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 }
 
@@ -129,9 +138,9 @@ export async function getRecentPosts(
   return posts.slice(0, count)
 }
 
-export async function getSortedTags(lang?: Lang): Promise<
-  { tag: string; count: number }[]
-> {
+export async function getSortedTags(
+  lang?: Lang,
+): Promise<{ tag: string; count: number }[]> {
   const tagCounts = await getAllTags(lang)
   return [...tagCounts.entries()]
     .map(([tag, count]) => ({ tag, count }))
@@ -268,7 +277,10 @@ export type TOCSection = {
   subpostId?: string
 }
 
-export async function getTOCSections(postId: string, overviewLabel = 'Overview'): Promise<TOCSection[]> {
+export async function getTOCSections(
+  postId: string,
+  overviewLabel = 'Overview',
+): Promise<TOCSection[]> {
   const post = await getPostById(postId)
   if (!post) return []
 

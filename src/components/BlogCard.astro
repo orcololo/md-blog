@@ -2,6 +2,7 @@
 import AvatarComponent from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { getLangFromUrl, getLocalePath, useTranslations } from '@/i18n/utils'
 import {
   getCombinedReadingTime,
   getSubpostCount,
@@ -13,7 +14,6 @@ import { Icon } from 'astro-icon/components'
 import { Image } from 'astro:assets'
 import type { CollectionEntry } from 'astro:content'
 import Link from './Link.astro'
-import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
 
 interface Props {
   entry: CollectionEntry<'blog'>
@@ -84,7 +84,8 @@ const subpostCount = !isSubpost(entry.id) ? await getSubpostCount(entry.id) : 0
               <Separator orientation="vertical" className="h-4!" />
               <span class="flex items-center gap-1">
                 <Icon name="lucide:file-text" class="size-3" />
-                {subpostCount} {subpostCount === 1 ? t('post.subpost') : t('post.subposts')}
+                {subpostCount}{' '}
+                {subpostCount === 1 ? t('post.subpost') : t('post.subposts')}
               </span>
             </>
           )

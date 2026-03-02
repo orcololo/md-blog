@@ -1,6 +1,6 @@
 ---
-import { getLanguageSwitchPath, getLanguageSwitchLabel } from '@/i18n/utils'
 import Link from '@/components/Link.astro'
+import { getLanguageSwitchLabel, getLanguageSwitchPath } from '@/i18n/utils'
 
 const switchPath = getLanguageSwitchPath(Astro.url)
 const switchLabel = getLanguageSwitchLabel(Astro.url)
@@ -8,7 +8,7 @@ const switchLabel = getLanguageSwitchLabel(Astro.url)
 
 <Link
   href={switchPath}
-  class="text-muted-foreground hover:text-primary font-mono text-xs transition-colors px-1.5 py-0.5"
+  class="text-muted-foreground hover:text-primary px-1.5 py-0.5 font-mono text-xs transition-colors"
   title={switchLabel === 'PT' ? 'Ver em Português' : 'View in English'}
 >
   {switchLabel}

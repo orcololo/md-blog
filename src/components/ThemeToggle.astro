@@ -1,7 +1,7 @@
 ---
 import { Button } from '@/components/ui/button'
-import { Icon } from 'astro-icon/components'
 import { getLangFromUrl, useTranslations } from '@/i18n/utils'
+import { Icon } from 'astro-icon/components'
 
 const lang = getLangFromUrl(Astro.url)
 const t = useTranslations(lang)

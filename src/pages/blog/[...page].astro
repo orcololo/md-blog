@@ -4,10 +4,10 @@ import Breadcrumbs from '@/components/Breadcrumbs.astro'
 import PageHead from '@/components/PageHead.astro'
 import PaginationComponent from '@/components/ui/pagination'
 import { SITE } from '@/consts'
+import { getLangFromUrl, getLocalePath, useTranslations } from '@/i18n/utils'
 import Layout from '@/layouts/Layout.astro'
 import { getAllPosts, groupPostsByYear } from '@/lib/data-utils'
 import type { PaginateFunction } from 'astro'
-import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
 
 export async function getStaticPaths({
   paginate,
@@ -30,8 +30,15 @@ const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
   <PageHead slot="head" title={t('blog.title')} />
   <Breadcrumbs
     items={[
-      { label: t('blog.title'), href: getLocalePath('/blog', lang), icon: 'lucide:library-big' },
-      { label: `${t('blog.page')} ${page.currentPage}`, icon: 'lucide:book-copy' },
+      {
+        label: t('blog.title'),
+        href: getLocalePath('/blog', lang),
+        icon: 'lucide:library-big',
+      },
+      {
+        label: `${t('blog.page')} ${page.currentPage}`,
+        icon: 'lucide:book-copy',
+      },
     ]}
   />
 

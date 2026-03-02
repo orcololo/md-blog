@@ -1,9 +1,9 @@
 ---
 import Link from '@/components/Link.astro'
 import { buttonVariants } from '@/components/ui/button'
+import { getLangFromUrl, getLocalePath, useTranslations } from '@/i18n/utils'
 import { cn } from '@/lib/utils'
 import { Icon } from 'astro-icon/components'
-import { getLangFromUrl, useTranslations, getLocalePath } from '@/i18n/utils'
 
 const { newerPost, olderPost, parentPost } = Astro.props
 const isSubpost = !!parentPost
@@ -18,7 +18,9 @@ const t = useTranslations(lang)
   )}
 >
   <Link
-    href={olderPost ? `${getLocalePath('/blog/', lang)}${olderPost.id}#post-title` : '#'}
+    href={olderPost
+      ? `${getLocalePath('/blog/', lang)}${olderPost.id}#post-title`
+      : '#'}
     class={cn(
       buttonVariants({ variant: 'outline' }),
       'group flex items-center justify-start size-full border-dashed hover:border-primary/50 dark:hover:shadow-sm',
@@ -46,7 +48,11 @@ const t = useTranslations(lang)
   {
     isSubpost && (
       <Link
-        href={parentPost ? `${getLocalePath('/blog/', lang)}${parentPost.id}#post-title` : '#'}
+        href={
+          parentPost
+            ? `${getLocalePath('/blog/', lang)}${parentPost.id}#post-title`
+            : '#'
+        }
         class={cn(
           buttonVariants({ variant: 'outline' }),
           'group hover:border-primary/50 flex size-full items-center justify-center border-dashed dark:hover:shadow-sm',
@@ -70,7 +76,9 @@ const t = useTranslations(lang)
   }
 
   <Link
-    href={newerPost ? `${getLocalePath('/blog/', lang)}${newerPost.id}#post-title` : '#'}
+    href={newerPost
+      ? `${getLocalePath('/blog/', lang)}${newerPost.id}#post-title`
+      : '#'}
     class={cn(
       buttonVariants({ variant: 'outline' }),
       'group flex items-center justify-end size-full border-dashed hover:border-primary/50 dark:hover:shadow-sm',
