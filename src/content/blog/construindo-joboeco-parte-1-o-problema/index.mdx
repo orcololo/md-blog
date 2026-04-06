@@ -1,0 +1,116 @@
+---
+title: 'Construindo o JoBoEco, Parte 1: o problema que justificou tudo'
+description: 'Parte 1 de 5 — Como a frustração com planilhas, Google Forms, taxas de plataforma e processos espalhados por N ferramentas me levou a construir uma plataforma completa de gestão de eventos acadêmicos.'
+date: 2026-04-07
+tags: ['joboeco', 'saas', 'eventos-academicos', 'backstory']
+authors: ['orcololo']
+published: true
+lang: pt
+series: 'Construindo o JoBoEco'
+seriesPart: 1
+---
+
+## O começo — e o caos
+
+Antes de escrever uma linha de código do JoBoEco, eu participei da organização de alguns eventos acadêmicos. A experiência foi esclarecedora — mas do jeito difícil.
+
+O processo era mais ou menos assim: uma planilha do Google Sheets para controlar inscrições, um Google Forms para capturar os dados, e-mails manuais para confirmar pagamentos (via Pix de chave aleatória, sem automação nenhuma), outro form para os avaliadores registrarem sua decisão sobre os resumos submetidos, e por fim um processo no Canva para gerar certificados um por um, que eram enviados em lotes via e-mail às 2h da manhã antes do evento.
+
+Se você achou que estou exagerando, não estou. É exatamente assim que a grande maioria dos eventos acadêmicos de pequeno e médio porte no Brasil funciona até hoje.
+
+O problema não é desorganização. É ausência de ferramenta específica. Sympla e Eventbrite são excelentes para shows e conferências corporativas, mas não têm nenhum suporte para o fluxo de um evento acadêmico real:
+
+- **Submissão de trabalhos** com múltiplas modalidades (resumo simples, resumo expandido)
+- **Revisão por pares** com diferentes modos de cegamento (aberta, simples-cega, duplo-cega)
+- **Cotas por categoria de participante** — estudante de graduação tem 2 submissões gratuitas, profissional paga por submissão, mestrando segue outra regra
+- **Comprovante de matrícula** como requisito para determinadas categorias, com revisão manual pelo admin
+- **Minicursos com vagas limitadas** e inscrição separada do evento principal
+- **Certificados com verificação de autenticidade** sem depender de um servidor online
+- **Publicação de anais** no formato acadêmico, com exportação BibTeX para gerenciadores de referência
+
+Cada um desses itens era resolvido com um remendo diferente. E quando você junta remendo com remendo, chega uma hora que o sistema inteiro colapsa — geralmente na sexta-feira antes do evento.
+
+## "Mas por que não usar X?"
+
+Essa pergunta aparece no segundo que você menciona que está construindo algo do zero. É uma pergunta legítima. Deixa eu responder de forma direta.
+
+**EasyChair, ScienceOpen, Open Conference Systems**: voltados para conferências de grande porte, com interfaces que parecem dos anos 2000 (porque várias são), customização limitada, zero integração com meios de pagamento nacionais, e preços completamente fora da realidade para eventos universitários brasileiros de pequeno porte. O EasyChair tem um pricing que começa em centenas de euros por evento. Inviável.
+
+**Sympla / Eventbrite**: ótimos para ticketing. Péssimos para o fluxo de submissão + avaliação. Não existe o conceito de "área de conhecimento" com "avaliador atribuído" e "submissão condicionada a comprovante". Você pode tentar montar esse fluxo com integrações externas — mas aí você está construindo o sistema mesmo, só que fragmentado e sem controle real.
+
+**Event3**: essa é a mais interessante de analisar. A plataforma é brasileira, focada especificamente em eventos acadêmicos, e consegue cobrir boa parte do fluxo de inscrição e submissão. É a opção mais próxima do que o JoBoEco se propõe a ser. Mas o modelo de negócio cobra uma porcentagem por inscrição paga — o que, na prática, penaliza exatamente os eventos que mais precisam de uma solução acessível. Para um congresso universitário com 300 inscrições a R$40 cada, a taxa da plataforma sai mais cara do que a infraestrutura do JoBoEco pelo ano inteiro. Fora isso, a customização de layout e regras de elegibilidade é limitada, e não há controle sobre o fluxo de confirmação de pagamento — ponto crítico que vou detalhar logo abaixo.
+
+**WordPress + plugins**: tentei isso uma vez em outro contexto. Não vou entrar em detalhes. Vou apenas dizer: 12 plugins que brigavam entre si, um processo de check-in que dependia de um plugin de $80/ano que parou de funcionar no fim de semana do evento, e três horas debugando conflito de jQuery em produção.
+
+A conclusão foi inevitável: o problema é específico o suficiente para justificar uma solução específica. E suficientemente recorrente — eventos acontecem todo semestre, em centenas de universidades brasileiras — para que o custo de construir valha o retorno.
+
+## O problema do Pix sem automação
+
+Isso merece um parágrafo próprio porque é um ponto de dor muito concreto. Os organizadores da [UEAP](https://www.ueap.edu.br/) — a Universidade do Estado do Amapá, onde o JoBoEco nasceu — tinham exatamente esse problema antes da plataforma existir.
+
+O fluxo de pagamento era este: o participante fazia um Pix para a chave da comissão organizadora, tirava um print do comprovante, e enviava por e-mail. Um membro da comissão conferia o print manualmente, verificava no extrato bancário se o valor batia, e então — se tudo certo — enviava um e-mail de confirmação.
+
+Esse processo tem vários problemas óbvios: consome tempo humano de forma linear (quanto mais inscrições, mais trabalho manual), é propenso a erro, depende de uma pessoa específica ter acesso ao extrato bancário, e cria um gargalo que atrasava confirmações por horas ou dias. Na reta final de inscrições, quando dezenas de pessoas faziam Pix simultâneos, a comissão simplesmente não conseguia confirmar tudo a tempo.
+
+Algumas plataformas que aceitam Pix resolvem parte disso, mas cobram taxas percentuais por transação. Para eventos sem fins lucrativos com taxa de inscrição baixa, essa taxa corrói uma parte significativa da arrecadação. É o tipo de custo que não aparece no planejamento orçamentário inicial e que gera atrito com a administração da universidade no final das contas.
+
+No JoBoEco, o Pix é processado via API do MercadoPago com confirmação automática via webhook — sem taxa percentual sobre o valor das inscrições acadêmicas. A confirmação chega em segundos, não em horas. O admin vê o status atualizado em tempo real. Esse foi um dos pontos de maior retorno prático da plataforma.
+
+## As funcionalidades espalhadas por N plataformas
+
+Outro padrão que vi repetido em múltiplos eventos: cada funcionalidade do ciclo de vida do congresso vivia numa plataforma diferente, sem integração entre elas.
+
+| Etapa | Plataforma ||
+|---|---|---|
+| Site do evento e programação | Google Sites ou WordPress |
+| Inscrições | Google Forms + planilha |
+| Pagamentos | Pix manual para chave aleatória |
+| Submissão de trabalhos | Google Forms separado |
+| Avaliação dos resumos | E-mail ou planilha compartilhada |
+| Comunicação com participantes | E-mail manual em lote |
+| Check-in presencial | Lista impressa ou planilha aberta no notebook |
+| Certificados | Canva + envio individual por e-mail |
+| Publicação dos anais | PDF enviado para repositório institucional |
+
+Nove etapas, nove sistemas que não se falam. Dados de inscrição copiados manualmente do Forms para a planilha de controle. Status de pagamento anotado à mão na planilha. Lista de inscritos exportada do Sheets para fazer o check-in. Resumos aprovados copiados do e-mail do avaliador para o form de resultado.
+
+Cada transferência manual de informação entre sistemas é uma oportunidade de erro. E mais: quando algo dá errado (o participante diz que mandou o comprovante e não está na lista, ou o avaliador diz que enviou a avaliação e ela não chegou), você tem que caçar o dado em arquivos distintos, sem log, sem rastreabilidade.
+
+O JoBoEco não resolveu a vida de todos os acadêmicos do Brasil. Mas para a UEAP, centralizou em um único sistema o que antes eram pelo menos seis ferramentas distintas — e eliminou a maior parte do trabalho manual de reconciliação entre elas.
+
+## O que é o JoBoEco, afinal
+
+O nome vem de "Jornada de Botânica e Ecologia" — o evento para o qual a plataforma foi originalmente concebida. Mas o sistema foi projetado desde o início para ser **multi-evento**: cada edição é uma entidade independente no banco de dados, com programação, categorias e configurações próprias.
+
+O que a plataforma cobre hoje:
+
+1. **Inscrições** com pagamento via Pix dinâmico (MercadoPago)
+2. **Inscrição em minicursos** com controle de vagas por atividade
+3. **Submissão de trabalhos** com motor de elegibilidade configurável por categoria de participante
+4. **Revisão por pares** com suporte a open, single-blind e double-blind
+5. **Check-in presencial** via leitura de QR Code
+6. **Geração de certificados** com verificação de autenticidade offline via HMAC-SHA256
+7. **Publicação de anais** com busca textual, filtragem por área e exportação BibTeX
+8. **Painel administrativo** completo com feature flags configuráveis em runtime
+
+Cada um desses itens tem uma história por trás. Uma decisão técnica, um tradeoff, uma tentativa que falhou antes de chegar na solução que está em produção. Essa série é sobre essas histórias.
+
+## A questão da escala
+
+Um detalhe que muda bastante o design: um evento acadêmico universitário tem picos de uso muito concentrados. Inscrições abrem, todo mundo tenta se inscrever no primeiro dia. Prazo de submissão fecha, todo mundo submete na última hora. No dia do evento, o check-in acontece em 30 minutos com centenas de pessoas.
+
+Fora desses picos, o tráfego é essencialmente zero.
+
+Isso criou uma restrição interessante de custo: eu não queria pagar por infraestrutura ociosa 90% do tempo para aguentar picos pontuais. Isso influenciou diretamente a escolha de stack — mas esse é assunto para o próximo post.
+
+## Por que escrever isso
+
+Parte da motivação é documentação. Quando você constrói algo com 24 migrations de banco, 3 modos de revisão, um motor de elegibilidade com 6 dimensões de verificação e um sistema de certificados que funciona offline — você quer que esse conhecimento sobreviva além da sua memória de trabalho.
+
+Mas a outra parte é mais direta: eu gostaria de ter encontrado posts assim quando estava tomando essas decisões. Posts que explicassem não apenas o _como_, mas o _por quê_. Por que essa stack? Por que esse design? O que você tentou antes? O que deu errado? O que faria diferente?
+
+É isso que vou tentar escrever nessa série. Sem glamourizar, sem esconder as partes que não ficaram bonitas.
+
+## O que vem a seguir
+
+Na próxima parte, falo sobre a decisão de stack — especificamente por que escolhi rodar tudo na Cloudflare (Workers, D1, R2) em vez do caminho mais óbvio de Vercel + PostgreSQL. É uma aposta que eu defendo, mas com tradeoffs reais que vale entender antes de seguir pelo mesmo caminho.

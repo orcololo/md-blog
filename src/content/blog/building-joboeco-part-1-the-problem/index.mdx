@@ -1,116 +1,116 @@
 ---
-title: 'Construindo o JoBoEco, Parte 1: o problema que justificou tudo'
-description: 'Parte 1 de 5 — Como a frustração com planilhas, Google Forms, taxas de plataforma e processos espalhados por N ferramentas me levou a construir uma plataforma completa de gestão de eventos acadêmicos.'
+title: 'Building JoBoEco, Part 1: the problem that justified everything'
+description: 'Part 1 of 5 — How frustration with spreadsheets, Google Forms, platform fees, and processes scattered across N tools led me to build a full academic event management platform.'
 date: 2026-04-07
-tags: ['joboeco', 'saas', 'eventos-academicos', 'backstory']
+tags: ['joboeco', 'saas', 'academic-events', 'backstory']
 authors: ['orcololo']
 published: true
-lang: pt
-series: 'Construindo o JoBoEco'
+lang: en
+series: 'Building JoBoEco'
 seriesPart: 1
 ---
 
-## O começo — e o caos
+## The beginning — and the chaos
 
-Antes de escrever uma linha de código do JoBoEco, eu participei da organização de alguns eventos acadêmicos. A experiência foi esclarecedora — mas do jeito difícil.
+Before writing a single line of JoBoEco code, I participated in organizing a few academic events. The experience was eye-opening — but in the hard way.
 
-O processo era mais ou menos assim: uma planilha do Google Sheets para controlar inscrições, um Google Forms para capturar os dados, e-mails manuais para confirmar pagamentos (via Pix de chave aleatória, sem automação nenhuma), outro form para os avaliadores registrarem sua decisão sobre os resumos submetidos, e por fim um processo no Canva para gerar certificados um por um, que eram enviados em lotes via e-mail às 2h da manhã antes do evento.
+The process went roughly like this: a Google Sheets spreadsheet to track registrations, a Google Form to capture the data, manual emails to confirm payments (via Pix with a random key, no automation whatsoever), another form for reviewers to register their decision on submitted abstracts, and finally a Canva-based process to generate certificates one by one, sent out in batches by email at 2am the night before the event.
 
-Se você achou que estou exagerando, não estou. É exatamente assim que a grande maioria dos eventos acadêmicos de pequeno e médio porte no Brasil funciona até hoje.
+If you think I'm exaggerating, I'm not. This is exactly how the vast majority of small and medium-sized academic events in Brazil still work today.
 
-O problema não é desorganização. É ausência de ferramenta específica. Sympla e Eventbrite são excelentes para shows e conferências corporativas, mas não têm nenhum suporte para o fluxo de um evento acadêmico real:
+The problem isn't disorganization. It's the absence of a purpose-built tool. Sympla and Eventbrite are excellent for concerts and corporate conferences, but they have no support for the workflow of a real academic event:
 
-- **Submissão de trabalhos** com múltiplas modalidades (resumo simples, resumo expandido)
-- **Revisão por pares** com diferentes modos de cegamento (aberta, simples-cega, duplo-cega)
-- **Cotas por categoria de participante** — estudante de graduação tem 2 submissões gratuitas, profissional paga por submissão, mestrando segue outra regra
-- **Comprovante de matrícula** como requisito para determinadas categorias, com revisão manual pelo admin
-- **Minicursos com vagas limitadas** e inscrição separada do evento principal
-- **Certificados com verificação de autenticidade** sem depender de um servidor online
-- **Publicação de anais** no formato acadêmico, com exportação BibTeX para gerenciadores de referência
+- **Paper submissions** with multiple modalities (short abstract, extended abstract)
+- **Peer review** with different blinding modes (open, single-blind, double-blind)
+- **Quotas per participant category** — undergraduate students get 2 free submissions, professionals pay per submission, graduate students follow another rule
+- **Enrollment proof** as a requirement for certain categories, with manual admin review
+- **Mini-courses with limited spots** and separate registration from the main event
+- **Certificates with authenticity verification** without depending on an online server
+- **Proceedings publication** in academic format, with BibTeX export for reference managers
 
-Cada um desses itens era resolvido com um remendo diferente. E quando você junta remendo com remendo, chega uma hora que o sistema inteiro colapsa — geralmente na sexta-feira antes do evento.
+Each of these was solved with a different patch. And when you pile patches on top of patches, at some point the whole system collapses — usually on the Friday before the event.
 
-## "Mas por que não usar X?"
+## "But why not use X?"
 
-Essa pergunta aparece no segundo que você menciona que está construindo algo do zero. É uma pergunta legítima. Deixa eu responder de forma direta.
+This question comes up the moment you mention you're building something from scratch. It's a legitimate question. Let me answer it directly.
 
-**EasyChair, ScienceOpen, Open Conference Systems**: voltados para conferências de grande porte, com interfaces que parecem dos anos 2000 (porque várias são), customização limitada, zero integração com meios de pagamento nacionais, e preços completamente fora da realidade para eventos universitários brasileiros de pequeno porte. O EasyChair tem um pricing que começa em centenas de euros por evento. Inviável.
+**EasyChair, ScienceOpen, Open Conference Systems**: aimed at large-scale conferences, with interfaces that look like they're from the 2000s (because many of them are), limited customization, zero integration with Brazilian payment methods, and pricing completely out of reach for small Brazilian university events. EasyChair's pricing starts at hundreds of euros per event. Unfeasible.
 
-**Sympla / Eventbrite**: ótimos para ticketing. Péssimos para o fluxo de submissão + avaliação. Não existe o conceito de "área de conhecimento" com "avaliador atribuído" e "submissão condicionada a comprovante". Você pode tentar montar esse fluxo com integrações externas — mas aí você está construindo o sistema mesmo, só que fragmentado e sem controle real.
+**Sympla / Eventbrite**: great for ticketing. Terrible for the submission + review workflow. There's no concept of "knowledge area" with "assigned reviewer" and "submission conditional on enrollment proof". You could try to build that flow with external integrations — but then you're building the system anyway, just fragmented and without real control.
 
-**Event3**: essa é a mais interessante de analisar. A plataforma é brasileira, focada especificamente em eventos acadêmicos, e consegue cobrir boa parte do fluxo de inscrição e submissão. É a opção mais próxima do que o JoBoEco se propõe a ser. Mas o modelo de negócio cobra uma porcentagem por inscrição paga — o que, na prática, penaliza exatamente os eventos que mais precisam de uma solução acessível. Para um congresso universitário com 300 inscrições a R$40 cada, a taxa da plataforma sai mais cara do que a infraestrutura do JoBoEco pelo ano inteiro. Fora isso, a customização de layout e regras de elegibilidade é limitada, e não há controle sobre o fluxo de confirmação de pagamento — ponto crítico que vou detalhar logo abaixo.
+**Event3**: this is the most interesting one to analyze. The platform is Brazilian, focused specifically on academic events, and can cover a good chunk of the registration and submission flow. It's the closest option to what JoBoEco aims to be. But the business model charges a percentage per paid registration — which in practice penalizes exactly the events that most need an accessible solution. For a university conference with 300 registrations at R$40 each, the platform fee ends up costing more than JoBoEco's infrastructure for the whole year. On top of that, layout and eligibility rule customization is limited, and there's no control over the payment confirmation flow — a critical point I'll detail below.
 
-**WordPress + plugins**: tentei isso uma vez em outro contexto. Não vou entrar em detalhes. Vou apenas dizer: 12 plugins que brigavam entre si, um processo de check-in que dependia de um plugin de $80/ano que parou de funcionar no fim de semana do evento, e três horas debugando conflito de jQuery em produção.
+**WordPress + plugins**: I tried this once in another context. I won't get into the details. I'll just say: 12 plugins fighting each other, a check-in process that depended on an $80/year plugin that stopped working the weekend of the event, and three hours debugging a jQuery conflict in production.
 
-A conclusão foi inevitável: o problema é específico o suficiente para justificar uma solução específica. E suficientemente recorrente — eventos acontecem todo semestre, em centenas de universidades brasileiras — para que o custo de construir valha o retorno.
+The conclusion was inevitable: the problem is specific enough to justify a specific solution. And recurring enough — events happen every semester at hundreds of Brazilian universities — that the cost of building is worth the return.
 
-## O problema do Pix sem automação
+## The problem of Pix without automation
 
-Isso merece um parágrafo próprio porque é um ponto de dor muito concreto. Os organizadores da [UEAP](https://www.ueap.edu.br/) — a Universidade do Estado do Amapá, onde o JoBoEco nasceu — tinham exatamente esse problema antes da plataforma existir.
+This deserves its own paragraph because it's a very concrete pain point. The organizers of [UEAP](https://www.ueap.edu.br/) — the State University of Amapá, where JoBoEco was born — had exactly this problem before the platform existed.
 
-O fluxo de pagamento era este: o participante fazia um Pix para a chave da comissão organizadora, tirava um print do comprovante, e enviava por e-mail. Um membro da comissão conferia o print manualmente, verificava no extrato bancário se o valor batia, e então — se tudo certo — enviava um e-mail de confirmação.
+The payment flow was: the participant made a Pix transfer to the organizing committee's key, took a screenshot of the receipt, and sent it by email. A committee member manually checked the screenshot, verified in the bank statement that the amount matched, and then — if everything was right — sent a confirmation email.
 
-Esse processo tem vários problemas óbvios: consome tempo humano de forma linear (quanto mais inscrições, mais trabalho manual), é propenso a erro, depende de uma pessoa específica ter acesso ao extrato bancário, e cria um gargalo que atrasava confirmações por horas ou dias. Na reta final de inscrições, quando dezenas de pessoas faziam Pix simultâneos, a comissão simplesmente não conseguia confirmar tudo a tempo.
+This process has several obvious problems: it consumes human time linearly (the more registrations, the more manual work), it's error-prone, it depends on a specific person having access to the bank statement, and it creates a bottleneck that delayed confirmations by hours or days. In the final stretch of registrations, when dozens of people were making simultaneous Pix transfers, the committee simply couldn't confirm everything in time.
 
-Algumas plataformas que aceitam Pix resolvem parte disso, mas cobram taxas percentuais por transação. Para eventos sem fins lucrativos com taxa de inscrição baixa, essa taxa corrói uma parte significativa da arrecadação. É o tipo de custo que não aparece no planejamento orçamentário inicial e que gera atrito com a administração da universidade no final das contas.
+Some platforms that accept Pix solve part of this, but charge percentage fees per transaction. For non-profit events with low registration fees, that fee eats into a significant portion of the revenue. It's the kind of cost that doesn't show up in the initial budget planning and creates friction with the university administration at the end.
 
-No JoBoEco, o Pix é processado via API do MercadoPago com confirmação automática via webhook — sem taxa percentual sobre o valor das inscrições acadêmicas. A confirmação chega em segundos, não em horas. O admin vê o status atualizado em tempo real. Esse foi um dos pontos de maior retorno prático da plataforma.
+In JoBoEco, Pix is processed via MercadoPago's API with automatic confirmation via webhook — no percentage fee on academic registration payments. Confirmation arrives in seconds, not hours. The admin sees the updated status in real time. This was one of the highest-impact improvements the platform delivered.
 
-## As funcionalidades espalhadas por N plataformas
+## Features scattered across N platforms
 
-Outro padrão que vi repetido em múltiplos eventos: cada funcionalidade do ciclo de vida do congresso vivia numa plataforma diferente, sem integração entre elas.
+Another pattern I saw repeated across multiple events: each step in the conference lifecycle lived in a different platform, with no integration between them.
 
-| Etapa | Plataforma ||
-|---|---|---|
-| Site do evento e programação | Google Sites ou WordPress |
-| Inscrições | Google Forms + planilha |
-| Pagamentos | Pix manual para chave aleatória |
-| Submissão de trabalhos | Google Forms separado |
-| Avaliação dos resumos | E-mail ou planilha compartilhada |
-| Comunicação com participantes | E-mail manual em lote |
-| Check-in presencial | Lista impressa ou planilha aberta no notebook |
-| Certificados | Canva + envio individual por e-mail |
-| Publicação dos anais | PDF enviado para repositório institucional |
+| Step                       | Platform                             |
+| -------------------------- | ------------------------------------ |
+| Event website and schedule | Google Sites or WordPress            |
+| Registrations              | Google Forms + spreadsheet           |
+| Payments                   | Manual Pix to random key             |
+| Paper submissions          | Separate Google Form                 |
+| Abstract review            | Email or shared spreadsheet          |
+| Participant communication  | Manual bulk email                    |
+| In-person check-in         | Printed list or laptop spreadsheet   |
+| Certificates               | Canva + individual email delivery    |
+| Proceedings publication    | PDF sent to institutional repository |
 
-Nove etapas, nove sistemas que não se falam. Dados de inscrição copiados manualmente do Forms para a planilha de controle. Status de pagamento anotado à mão na planilha. Lista de inscritos exportada do Sheets para fazer o check-in. Resumos aprovados copiados do e-mail do avaliador para o form de resultado.
+Nine steps, nine systems that don't talk to each other. Registration data manually copied from Forms to the control spreadsheet. Payment status written by hand in the spreadsheet. Attendee list exported from Sheets for check-in. Approved abstracts copied from the reviewer's email to the results form.
 
-Cada transferência manual de informação entre sistemas é uma oportunidade de erro. E mais: quando algo dá errado (o participante diz que mandou o comprovante e não está na lista, ou o avaliador diz que enviou a avaliação e ela não chegou), você tem que caçar o dado em arquivos distintos, sem log, sem rastreabilidade.
+Every manual data transfer between systems is an opportunity for error. And more: when something goes wrong (the participant says they sent the receipt and aren't on the list, or the reviewer says they submitted the review and it never arrived), you have to hunt down the data across separate files, with no log, no traceability.
 
-O JoBoEco não resolveu a vida de todos os acadêmicos do Brasil. Mas para a UEAP, centralizou em um único sistema o que antes eram pelo menos seis ferramentas distintas — e eliminou a maior parte do trabalho manual de reconciliação entre elas.
+JoBoEco didn't solve the lives of all Brazilian academics. But for UEAP, it centralized into a single system what was previously at least six separate tools — and eliminated the bulk of the manual reconciliation work between them.
 
-## O que é o JoBoEco, afinal
+## What JoBoEco actually is
 
-O nome vem de "Jornada de Botânica e Ecologia" — o evento para o qual a plataforma foi originalmente concebida. Mas o sistema foi projetado desde o início para ser **multi-evento**: cada edição é uma entidade independente no banco de dados, com programação, categorias e configurações próprias.
+The name comes from "Jornada de Botânica e Ecologia" (Botany and Ecology Conference) — the event for which the platform was originally conceived. But the system was designed from the start to be **multi-event**: each edition is an independent entity in the database, with its own schedule, categories, and settings.
 
-O que a plataforma cobre hoje:
+What the platform covers today:
 
-1. **Inscrições** com pagamento via Pix dinâmico (MercadoPago)
-2. **Inscrição em minicursos** com controle de vagas por atividade
-3. **Submissão de trabalhos** com motor de elegibilidade configurável por categoria de participante
-4. **Revisão por pares** com suporte a open, single-blind e double-blind
-5. **Check-in presencial** via leitura de QR Code
-6. **Geração de certificados** com verificação de autenticidade offline via HMAC-SHA256
-7. **Publicação de anais** com busca textual, filtragem por área e exportação BibTeX
-8. **Painel administrativo** completo com feature flags configuráveis em runtime
+1. **Registrations** with payment via dynamic Pix (MercadoPago)
+2. **Mini-course registration** with per-activity capacity control
+3. **Paper submissions** with configurable eligibility engine per participant category
+4. **Peer review** with support for open, single-blind, and double-blind
+5. **In-person check-in** via QR Code scanning
+6. **Certificate generation** with offline authenticity verification via HMAC-SHA256
+7. **Proceedings publication** with full-text search, area filtering, and BibTeX export
+8. **Full admin panel** with feature flags configurable at runtime
 
-Cada um desses itens tem uma história por trás. Uma decisão técnica, um tradeoff, uma tentativa que falhou antes de chegar na solução que está em produção. Essa série é sobre essas histórias.
+Each of these has a story behind it. A technical decision, a tradeoff, an attempt that failed before reaching the solution that's in production. This series is about those stories.
 
-## A questão da escala
+## The scale question
 
-Um detalhe que muda bastante o design: um evento acadêmico universitário tem picos de uso muito concentrados. Inscrições abrem, todo mundo tenta se inscrever no primeiro dia. Prazo de submissão fecha, todo mundo submete na última hora. No dia do evento, o check-in acontece em 30 minutos com centenas de pessoas.
+A detail that significantly affects the design: academic university events have very concentrated usage spikes. Registrations open, everyone tries to register on the first day. Submission deadline closes, everyone submits at the last minute. On the day of the event, check-in happens in 30 minutes with hundreds of people.
 
-Fora desses picos, o tráfego é essencialmente zero.
+Outside those spikes, traffic is essentially zero.
 
-Isso criou uma restrição interessante de custo: eu não queria pagar por infraestrutura ociosa 90% do tempo para aguentar picos pontuais. Isso influenciou diretamente a escolha de stack — mas esse é assunto para o próximo post.
+This created an interesting cost constraint: I didn't want to pay for idle infrastructure 90% of the time to handle occasional spikes. This directly influenced the stack choice — but that's a topic for the next post.
 
-## Por que escrever isso
+## Why write this
 
-Parte da motivação é documentação. Quando você constrói algo com 24 migrations de banco, 3 modos de revisão, um motor de elegibilidade com 6 dimensões de verificação e um sistema de certificados que funciona offline — você quer que esse conhecimento sobreviva além da sua memória de trabalho.
+Part of the motivation is documentation. When you build something with 24 database migrations, 3 review modes, an eligibility engine with 6 verification dimensions, and a certificate system that works offline — you want that knowledge to survive beyond your working memory.
 
-Mas a outra parte é mais direta: eu gostaria de ter encontrado posts assim quando estava tomando essas decisões. Posts que explicassem não apenas o _como_, mas o _por quê_. Por que essa stack? Por que esse design? O que você tentou antes? O que deu errado? O que faria diferente?
+But the other part is more direct: I wish I had found posts like this when I was making those decisions. Posts that explained not just the _how_, but the _why_. Why this stack? Why this design? What did you try before? What went wrong? What would you do differently?
 
-É isso que vou tentar escrever nessa série. Sem glamourizar, sem esconder as partes que não ficaram bonitas.
+That's what I'll try to write in this series. Without glamorizing, without hiding the parts that didn't turn out pretty.
 
-## O que vem a seguir
+## What comes next
 
-Na próxima parte, falo sobre a decisão de stack — especificamente por que escolhi rodar tudo na Cloudflare (Workers, D1, R2) em vez do caminho mais óbvio de Vercel + PostgreSQL. É uma aposta que eu defendo, mas com tradeoffs reais que vale entender antes de seguir pelo mesmo caminho.
+In the next part, I talk about the stack decision — specifically why I chose to run everything on Cloudflare (Workers, D1, R2) instead of the more obvious Vercel + PostgreSQL path. It's a bet I stand behind, but with real tradeoffs worth understanding before going down the same road.

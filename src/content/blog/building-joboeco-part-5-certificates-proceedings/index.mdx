@@ -1,78 +1,87 @@
 ---
-title: 'Construindo o JoBoEco, Parte 5: certificados, anais e o primeiro evento real'
-description: 'Parte 5 de 5 — Como funciona a verificação de certificados sem banco de dados usando HMAC-SHA256, os anais com exportação BibTeX, o check-in via QR Code, e o que aprendi no primeiro evento real usando a plataforma.'
+title: 'Building JoBoEco, Part 5: certificates, proceedings, and the first real event'
+description: 'Part 5 of 5 — How certificate verification works without a database using HMAC-SHA256, the proceedings with BibTeX export, QR Code check-in, and what I learned at the first real event using the platform.'
 date: 2026-05-05
-tags: ['joboeco', 'hmac', 'certificados', 'jspdf', 'bibtex', 'anais', 'qrcode']
+tags:
+  [
+    'joboeco',
+    'hmac',
+    'certificates',
+    'jspdf',
+    'bibtex',
+    'proceedings',
+    'qrcode',
+  ]
 authors: ['orcololo']
 published: true
-lang: pt
-series: 'Construindo o JoBoEco'
+lang: en
+series: 'Building JoBoEco'
 seriesPart: 5
 ---
 
-## O problema dos certificados acadêmicos
+## The problem with academic certificates
 
-Certificados para eventos acadêmicos têm um requisito que a maioria dos sistemas de geração de certificados ignora: **eles precisam ser verificáveis anos depois**.
+Certificates for academic events have a requirement that most certificate generation systems ignore: **they need to be verifiable years later**.
 
-Um participante pode precisar apresentar o certificado da JoBoEco 3 anos depois, num processo de avaliação de currículo. O verificador vai querer confirmar que aquele certificado é autêntico — que aquela pessoa realmente participou daquele evento.
+A participant might need to present their JoBoEco certificate 3 years down the line, in a CV evaluation process. The verifier will want to confirm that certificate is authentic — that that person really attended that event.
 
-As abordagens comuns para isso são:
+The common approaches for this are:
 
-1. **Banco de dados centralizado**: você entra numa URL, digita um código, e o sistema consulta o banco. Funciona enquanto você mantém o servidor e o banco ativos. Em 5 anos, quando o domínio expirar? Em 10 anos?
+1. **Centralized database**: you go to a URL, type a code, and the system queries the database. Works as long as you keep the server and database active. In 5 years, when the domain expires? In 10 years?
 
-2. **QR com URL**: o QR no certificado aponta para uma URL de verificação. Mesmo problema — depende de infraestrutura ativa.
+2. **QR with URL**: the QR on the certificate points to a verification URL. Same problem — depends on active infrastructure.
 
-3. **Criptografia assimétrica**: você assina o conteúdo do certificado com uma chave privada. O verificador usa a chave pública para confirmar. Não depende de infraestrutura, mas a UX para o verificador é complexa.
+3. **Asymmetric cryptography**: you sign the certificate content with a private key. The verifier uses the public key to confirm. Doesn't depend on infrastructure, but the UX for the verifier is complex.
 
-A abordagem que adotei foi outra: **HMAC-SHA256 com verificação sem banco**.
+The approach I adopted was different: **HMAC-SHA256 with database-free verification**.
 
-## Como funciona o HMAC no certificado
+## How HMAC works in the certificate
 
-HMAC (Hash-based Message Authentication Code) é um mecanismo de autenticação de mensagens usando uma função hash e uma chave secreta. A ideia é simples: dado um `enrollmentId` e uma `CERT_SECRET` (variável de ambiente no servidor), o HMAC é determinístico — sempre produz o mesmo código para a mesma combinação.
+HMAC (Hash-based Message Authentication Code) is a message authentication mechanism using a hash function and a secret key. The idea is simple: given an `enrollmentId` and a `CERT_SECRET` (an environment variable on the server), the HMAC is deterministic — it always produces the same code for the same combination.
 
 ```ts title="src/lib/certificate.ts"
-import { createHmac } from "crypto";
+import { createHmac } from 'crypto'
 
 export function generateCertificateCode(enrollmentId: string): string {
-  return createHmac("sha256", process.env.CERT_SECRET!)
+  return createHmac('sha256', process.env.CERT_SECRET!)
     .update(enrollmentId)
-    .digest("hex")
-    .substring(0, 16) // 16 chars: legível e suficientemente único
-    .toUpperCase();
+    .digest('hex')
+    .substring(0, 16) // 16 chars: readable and sufficiently unique
+    .toUpperCase()
 }
 ```
 
-Esse código é embutido como QR Code no PDF do certificado. A URL do QR aponta para `joboeco.org/certificado/verificar?code=XXXX&enrollment=yyy`.
+This code is embedded as a QR Code in the certificate PDF. The QR URL points to `joboeco.org/certificate/verify?code=XXXX&enrollment=yyy`.
 
-A página de verificação **não consulta o banco**. Ela recalcula o HMAC:
+The verification page **does not query the database**. It recalculates the HMAC:
 
-```ts title="src/app/certificado/verificar/page.tsx"
-export default async function VerificacaoPage({ searchParams }) {
+```ts title="src/app/certificate/verify/page.tsx"
+export default async function VerificationPage({ searchParams }) {
   const { code, enrollment } = await searchParams;
 
   const expectedCode = generateCertificateCode(enrollment);
   const isValid = code === expectedCode;
 
-  return isValid ? <CertificadoValido /> : <CertificadoInvalido />;
+  return isValid ? <ValidCertificate /> : <InvalidCertificate />;
 }
 ```
 
-Se o código bate com o HMAC recalculado para aquele `enrollmentId`, o certificado é autêntico. Sem banco de dados. Sem chamada externa. Funciona enquanto o código de verificação existir — e o algoritmo HMAC continuar sendo aplicado da mesma forma.
+If the code matches the recalculated HMAC for that `enrollmentId`, the certificate is authentic. No database. No external call. Works as long as the verification code exists — and the HMAC algorithm continues to be applied in the same way.
 
-A limitação óbvia: se você precisar invalidar um certificado (o que raramente acontece, mas pode), você precisaria de uma lista de revogação — que reintroduz a dependência de banco. Para os casos de uso do JoBoEco, aceito esse tradeoff.
+The obvious limitation: if you ever need to revoke a certificate (which rarely happens, but can), you'd need a revocation list — which reintroduces the database dependency. For JoBoEco's use cases, I accept that tradeoff.
 
-## Geração de PDF no cliente
+## Client-side PDF generation
 
-A geração do PDF acontece **no navegador**, usando jsPDF. Não há endpoint de servidor que gere certificados.
+The PDF generation happens **in the browser**, using jsPDF. There is no server endpoint that generates certificates.
 
-Por que no cliente?
+Why on the client?
 
-1. **Custo zero de processamento** no servidor — cada download é computação do dispositivo do usuário
-2. **Zero latência de download** — o PDF é gerado localmente e baixado imediatamente
-3. **Não há dados sensíveis trafegando** — o certificado é montado com dados que o frontend já tem
+1. **Zero processing cost on the server** — each download is computation on the user's device
+2. **Zero download latency** — the PDF is generated locally and downloaded immediately
+3. **No sensitive data in transit** — the certificate is assembled with data the frontend already has
 
 ```ts title="src/lib/certificate.ts"
-import jsPDF from "jspdf";
+import jsPDF from 'jspdf'
 
 export function generateCertificatePDF({
   participantName,
@@ -83,120 +92,118 @@ export function generateCertificatePDF({
   certCode,
   enrollmentId,
 }: CertificateData): Blob {
-  const doc = new jsPDF({ orientation: "landscape", format: "a4" });
+  const doc = new jsPDF({ orientation: 'landscape', format: 'a4' })
 
-  // Layout, fontes, textos, logo do evento...
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
-  doc.text(participantName, 148.5, 100, { align: "center" });
+  // Layout, fonts, text, event logo...
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(24)
+  doc.text(participantName, 148.5, 100, { align: 'center' })
 
-  // QR Code com URL de verificação
-  const verificationUrl = `https://joboeco.org/certificado/verificar?code=${certCode}&enrollment=${enrollmentId}`;
-  // adiciona QR via qrcode.react convertido para data URL
+  // QR Code with verification URL
+  const verificationUrl = `https://joboeco.org/certificate/verify?code=${certCode}&enrollment=${enrollmentId}`
+  // adds QR via qrcode.react converted to data URL
 
-  return doc.output("blob");
+  return doc.output('blob')
 }
 ```
 
-A limitação: customização visual do PDF é trabalhosa com jsPDF. É tudo posicionamento manual em pontos. Considerei usar `@react-pdf/renderer` (que tem uma API mais declarativa), mas ele não funciona em Cloudflare Workers e teria complicado o deploy. jsPDF funciona inteiramente no cliente, o que resolve o problema.
+The limitation: visual customization of the PDF is tedious with jsPDF. It's all manual positioning in points. I considered using `@react-pdf/renderer` (which has a more declarative API), but it doesn't work in Cloudflare Workers and would have complicated the deploy. jsPDF runs entirely on the client, which solves the problem.
 
-Para os certificados do JoBoEco, o layout é institucional e estável — uma vez que ficou bom, não precisa mudar frequentemente. O custo de manutenção do jsPDF é aceitável.
+For JoBoEco's certificates, the layout is institutional and stable — once it looked good, it didn't need to change often. The jsPDF maintenance cost is acceptable.
 
-## Check-in via QR Code
+## QR Code check-in
 
-O check-in presencial usa `html5-qrcode` para leitura de QR Code pela câmera do dispositivo do organizador. O fluxo é:
+In-person check-in uses `html5-qrcode` to read QR Codes via the organizer's device camera. The flow is:
 
-1. Participante mostra o QR Code da inscrição (disponível na área do participante)
-2. Organizador aponta a câmera do celular para o QR
-3. O sistema valida a inscrição e registra a presença
-4. Feedback imediato na tela: ✓ confirmado ou ✗ não encontrado/já registrado
+1. Participant shows the registration QR Code (available in the participant area)
+2. Organizer points their phone camera at the QR
+3. The system validates the registration and records attendance
+4. Immediate feedback on screen: ✓ confirmed or ✗ not found / already checked in
 
-```ts title="src/app/organizador/checkin/page.tsx"
-import { Html5QrcodeScanner } from "html5-qrcode";
+```ts title="src/app/organizer/checkin/page.tsx"
+import { Html5QrcodeScanner } from 'html5-qrcode'
 
-// QR Code contém o enrollmentId
+// QR Code contains the enrollmentId
 function onScanSuccess(enrollmentId: string) {
   fetch(`/api/checkin`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify({ enrollmentId }),
   })
     .then((res) => res.json())
-    .then((data) => setCheckinResult(data));
+    .then((data) => setCheckinResult(data))
 }
 ```
 
-Simples, mas funcional. O organizador usa o celular pessoal, sem hardware adicional. Toda a lógica de validação fica no endpoint `/api/checkin`, que verifica se o `enrollmentId` existe, se a inscrição está paga, e se o check-in já foi feito (idempotência novamente).
+Simple, but functional. The organizer uses their personal phone, no additional hardware required. All validation logic lives in the `/api/checkin` endpoint, which checks whether the `enrollmentId` exists, whether the registration is paid, and whether check-in has already been done (idempotency again).
 
-Um detalhe que faz diferença: o endpoint retorna um campo `alreadyCheckedIn`, e o frontend exibe uma mensagem diferente para "primeira vez aqui" vs "já fez check-in". Isso evita confusão quando alguém escaneia o mesmo QR duas vezes por acidente.
+A detail that makes a difference: the endpoint returns an `alreadyCheckedIn` field, and the frontend displays a different message for "first time here" vs "already checked in". This prevents confusion when someone scans the same QR twice by accident.
 
-O painel de organização também tem uma tabela com todos os check-ins em tempo real e export CSV para relatório de presença. O CSV foi surpreendentemente uma das features mais usadas.
+The organizer panel also has a real-time table of all check-ins and a CSV export for attendance reports. The CSV was surprisingly one of the most-used features.
 
-## Os anais acadêmicos
+## The academic proceedings
 
-A publicação dos anais é o módulo que, para o público do evento, tem mais valor percebido — e tecnicamente foi dos mais interessantes de construir.
+Publishing the proceedings is the module that, for the event's audience, has the most perceived value — and was technically one of the most interesting to build.
 
-O portal de anais exibe todos os trabalhos aceitos na revisão, com:
+The proceedings portal displays all papers accepted through review, with:
 
-- **Busca textual** por título, resumo e autores
-- **Filtragem por área** de conhecimento
-- **Detalhes completos** de cada trabalho (título, autores, resumo, área)
-- **Download do PDF** do trabalho completo (se enviado), servido diretamente do R2
-- **Exportação BibTeX** de qualquer trabalho
+- **Full-text search** by title, abstract, and authors
+- **Filtering by knowledge area**
+- **Complete details** for each paper (title, authors, abstract, area)
+- **PDF download** of the full paper (if submitted), served directly from R2
+- **BibTeX export** for any paper
 
-A busca é implementada com `LIKE` no D1, que para o volume dos anais (dezenas a algumas centenas de trabalhos) é suficientemente rápido. Não precisei de índice full-text nem de Algolia.
+The search is implemented with `LIKE` on D1, which for proceedings volume (dozens to a few hundred papers) is fast enough. No full-text index or Algolia needed.
 
-O BibTeX foi a feature que eu mais gostei de implementar. O formato é familiar para qualquer acadêmico, e permite importar as referências diretamente no Zotero, Mendeley ou LaTeX:
+BibTeX was the feature I enjoyed implementing most. The format is familiar to any academic, and lets you import references directly into Zotero, Mendeley, or LaTeX:
 
 ```ts title="src/lib/bibtex.ts"
 export function generateBibTeX(submission: SubmissionForBib): string {
-  const key = `${submission.authorLastName.toLowerCase()}${submission.year}${
-    submission.titleWords[0].toLowerCase()
-  }`;
+  const key = `${submission.authorLastName.toLowerCase()}${submission.year}${submission.titleWords[0].toLowerCase()}`
 
   return `@inproceedings{${key},
   author    = {${submission.authorName}},
   title     = {{${submission.title}}},
-  booktitle = {Anais da ${submission.eventName}},
+  booktitle = {Proceedings of the ${submission.eventName}},
   year      = {${submission.year}},
   address   = {${submission.eventCity}},
-  pages     = {${submission.pages ?? ""}},
+  pages     = {${submission.pages ?? ''}},
   note      = {${submission.area}}
-}`;
+}`
 }
 ```
 
 ```
 @inproceedings{silva2025floristica,
   author    = {Silva, M. A.},
-  title     = {{Florística de epífitas vasculares em fragmento de Mata Atlântica}},
-  booktitle = {Anais da Jornada de Botânica e Ecologia},
+  title     = {{Vascular epiphyte floristics in Atlantic Forest fragment}},
+  booktitle = {Proceedings of the Botany and Ecology Conference},
   year      = {2025},
   address   = {São Carlos, SP},
-  note      = {Botânica Sistemática}
+  note      = {Systematic Botany}
 }
 ```
 
-Pequeno detalhe de UX que fez diferença: ao clicar em "copiar BibTeX", o texto é copiado para o clipboard e um toast confirma. Parece trivial, mas elimina o passo de "selecionar tudo > copiar" que a maioria dos sistemas exige.
+A small UX detail that made a difference: clicking "copy BibTeX" copies the text to the clipboard and a toast confirms it. It seems trivial, but it eliminates the "select all > copy" step that most systems require.
 
-## O primeiro evento real
+## The first real event
 
-Quando o JoBoEco foi ao ar pela primeira vez, num evento universitário real com algumas centenas de participantes, algumas coisas que eu esperava que fossem problemas não foram — e algumas coisas que eu não esperava quebraram.
+When JoBoEco went live for the first time, at a real university event with a few hundred participants, some things I expected to be problems weren't — and some things I didn't expect broke.
 
-**O que funcionou melhor do que esperava**: o Pix. A taxa de conclusão do pagamento foi alta e não teve nenhuma confirmação manual necessária. O sistema de polling + webhook funcionou perfeitamente — sem nenhum pagamento "órfão".
+**What worked better than expected**: Pix. The payment completion rate was high and no manual confirmation was needed at all. The polling + webhook system worked perfectly — not a single "orphaned" payment.
 
-**O que me surpreendeu negativamente**: a diversidade de dispositivos no check-in. `html5-qrcode` tem comportamento inconsistente em certos modelos de Android mais antigos — a câmera não focava corretamente para leitura de QR Code. Adicionei na tela do check-in um campo alternativo para digitar o código manualmente, o que cobriu os casos problemáticos.
+**What surprised me negatively**: device diversity during check-in. `html5-qrcode` has inconsistent behavior on certain older Android models — the camera wouldn't focus correctly for QR Code reading. I added an alternative field on the check-in screen to type the code manually, which covered the problematic cases.
 
-**O que aprendi sobre usuários acadêmicos**: o PDF dos certificados foi baixado massivamente logo após o evento. A opção de cópia BibTeX foi usada muito mais do que eu esperava — o público-alvo realmente usa gerenciadores de referência. E ninguém reportou problema na verificação offline dos certificados, o que é o melhor tipo de feedback para um sistema que deve ser invisível.
+**What I learned about academic users**: the certificate PDFs were downloaded massively right after the event. The BibTeX copy option was used far more than I expected — the target audience really does use reference managers. And nobody reported a problem with offline certificate verification, which is the best kind of feedback for a system that should be invisible.
 
-## Encerrando a série — o que ficaria de fora se fizesse de novo
+## Closing the series — what I'd leave out if starting over
 
-Construir o JoBoEco foi um exercício de priorização constante. Algumas features que ficaram de fora da v1 (mas que estão no backlog):
+Building JoBoEco was a constant exercise in prioritization. Some features that didn't make it into v1 (but are on the backlog):
 
-- **Reembolsos automáticos**: hoje, reembolso é manual
-- **Notificações push**: hoje, apenas e-mail transacional via Resend
-- **App mobile**: hoje, o site é responsivo mas não tem app nativo para o check-in
-- **Multi-instância completa**: hoje, o sistema roda um evento por banco D1; a arquitetura suporta múltiplos eventos mas não múltiplas organizações independentes
+- **Automatic refunds**: today, refunds are manual
+- **Push notifications**: today, only transactional email via Resend
+- **Mobile app**: today, the site is responsive but there's no native app for check-in
+- **Full multi-tenancy**: today, the system runs one event per D1 database; the architecture supports multiple events but not multiple independent organizations
 
-O JoBoEco é um projeto que nasceu de uma frustração real, foi construído para um contexto real, e está em uso em produção real. Não é o sistema mais sofisticado que existe, mas resolve o problema que prometeu resolver — e isso, no fim, é o que importa.
+JoBoEco is a project born from a real frustration, built for a real context, and running in real production. It's not the most sophisticated system out there, but it solves the problem it promised to solve — and in the end, that's what matters.
 
-O código está em produção em [joboeco.org](https://joboeco.org). Se você organiza eventos acadêmicos e quer conversar sobre o que aprendi, pode me encontrar no GitHub ou por e-mail.
+The code is in production at [joboeco.org](https://joboeco.org). If you organize academic events and want to talk about what I learned, you can find me on GitHub or by email.

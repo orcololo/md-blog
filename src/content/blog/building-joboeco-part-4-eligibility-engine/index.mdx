@@ -1,81 +1,88 @@
 ---
-title: 'Construindo o JoBoEco, Parte 4: o motor de elegibilidade'
-description: 'Parte 4 de 5 — A parte mais complexa do JoBoEco não foi o pagamento nem o deploy — foi modelar as regras de elegibilidade para submissão de trabalhos. Aqui estão as decisões de design e por que isolar lógica de negócio de verdade é mais difícil do que parece.'
+title: 'Building JoBoEco, Part 4: the eligibility engine'
+description: 'Part 4 of 5 — The most complex part of JoBoEco was not the payment or the deploy — it was modeling the eligibility rules for paper submissions. Here are the design decisions and why truly isolating business logic is harder than it looks.'
 date: 2026-04-28
-tags: ['joboeco', 'domain-design', 'typescript', 'revisao-por-pares', 'clean-architecture']
+tags:
+  [
+    'joboeco',
+    'domain-design',
+    'typescript',
+    'peer-review',
+    'clean-architecture',
+  ]
 authors: ['orcololo']
 published: true
-lang: pt
-series: 'Construindo o JoBoEco'
+lang: en
+series: 'Building JoBoEco'
 seriesPart: 4
 ---
 
-## O problema de "quem pode submeter o quê"
+## The problem of "who can submit what"
 
-Parece simples: o participante inscrito pode submeter trabalhos. Mas aí você começa a destrinchar as regras reais e percebe que é bem mais complexo.
+It sounds simple: enrolled participants can submit papers. But then you start unpacking the real rules and realize it's considerably more complex.
 
-No JoBoEco, as regras de elegibilidade para submissão incluem:
+In JoBoEco, the eligibility rules for submission include:
 
-1. **O evento está com submissões abertas?** (flag global configurável pelo admin)
-2. **O participante está inscrito no evento?** (verificação básica)
-3. **O participante tem sua inscrição paga?** (ou é isento de pagamento por alguma razão)
-4. **A categoria do participante permite submissão nesta área?**
-5. **Se a categoria exige comprovante de matrícula, ele foi enviado e aprovado?**
-6. **O participante ainda tem cota de submissões gratuitas disponíveis na sua categoria?**
-7. **Se a cota gratuita esgotou, existe uma taxa de submissão para essa área — e ela foi paga?**
-8. **O limite global de submissões do evento ainda não foi atingido?**
+1. **Are submissions currently open?** (global flag configurable by the admin)
+2. **Is the participant enrolled in the event?** (basic check)
+3. **Is the participant's registration paid?** (or exempt from payment for some reason)
+4. **Does the participant's category allow submission in this area?**
+5. **If the category requires an enrollment proof, has it been submitted and approved?**
+6. **Does the participant still have free submission quota available in their category?**
+7. **If the free quota is exhausted, is there a submission fee for this area — and has it been paid?**
+8. **Has the event's global submission limit not yet been reached?**
 
-Oito dimensões de verificação. Cada uma pode ser configurada independentemente pelo admin. E qualquer alteração nas configurações precisa ser refletida imediatamente, sem redeploy.
+Eight verification dimensions. Each can be configured independently by the admin. And any change to the configuration needs to be reflected immediately, without a redeploy.
 
-Na primeira versão do sistema, esse código estava espalhado pelo handler da API de submissão — uma série de `if`s aninhados que misturava validação, acesso ao banco e resposta HTTP. Funcionava, mas era impossível de testar e difícil de modificar sem quebrar alguma outra regra.
+In the first version of the system, this code was scattered across the submission API handler — a series of nested `if`s that mixed validation, database access, and HTTP responses. It worked, but was impossible to test and hard to modify without breaking some other rule.
 
-## A refatoração para serviço puro
+## The refactor to a pure service
 
-A decisão foi extrair toda a lógica de elegibilidade para um módulo separado, `src/lib/eligibility.ts`, que:
+The decision was to extract all eligibility logic into a separate module, `src/lib/eligibility.ts`, that:
 
-1. **Não chama o banco diretamente** — recebe como parâmetro tudo que precisa
-2. **Não faz side effects** — não atualiza nada, apenas avalia
-3. **Retorna um tipo estruturado** — não uma string de erro, mas um objeto com contexto completo
-4. **É testável isoladamente** — você pode escrever testes unitários sem mock de banco de dados
+1. **Does not call the database directly** — receives everything it needs as parameters
+2. **Has no side effects** — doesn't update anything, only evaluates
+3. **Returns a structured type** — not an error string, but an object with full context
+4. **Is testable in isolation** — you can write unit tests without database mocks
 
-O contrato ficou assim:
+The contract ended up like this:
 
 ```ts title="src/lib/eligibility.ts"
 export type EligibilityStatus =
-  | "ELIGIBLE"
-  | "NOT_ENROLLED"
-  | "ENROLLMENT_PROOF_PENDING"
-  | "ENROLLMENT_PROOF_REJECTED"
-  | "FREE_QUOTA_EXHAUSTED_NO_PAID_OPTION"
-  | "NEEDS_SUBMISSION_PAYMENT"
-  | "SUBMISSIONS_CLOSED"
-  | "GLOBAL_LIMIT_REACHED"
-  | "CATEGORY_NOT_ALLOWED";
+  | 'ELIGIBLE'
+  | 'NOT_ENROLLED'
+  | 'ENROLLMENT_PROOF_PENDING'
+  | 'ENROLLMENT_PROOF_REJECTED'
+  | 'FREE_QUOTA_EXHAUSTED_NO_PAID_OPTION'
+  | 'NEEDS_SUBMISSION_PAYMENT'
+  | 'SUBMISSIONS_CLOSED'
+  | 'GLOBAL_LIMIT_REACHED'
+  | 'CATEGORY_NOT_ALLOWED'
 
 export interface EligibilityContext {
-  status: EligibilityStatus;
-  eligible: boolean;
-  // contexto adicional para o frontend renderizar a mensagem certa
-  freeSubmissionsUsed?: number;
-  freeSubmissionsTotal?: number;
-  submissionFee?: number;
-  pendingPaymentId?: string;
+  status: EligibilityStatus
+  eligible: boolean
+  // additional context for the frontend to render the right message
+  freeSubmissionsUsed?: number
+  freeSubmissionsTotal?: number
+  submissionFee?: number
+  pendingPaymentId?: string
 }
 
 export function checkSubmissionEligibility(
   input: EligibilityInput,
 ): EligibilityContext {
-  // toda a lógica aqui, sem side effects
+  // all the logic here, no side effects
 }
 ```
 
-O retorno `eligible: boolean` é a resposta rápida para o frontend decidir se mostra o botão de submissão. O `status` enum permite renderizar uma mensagem específica para cada caso. Os campos opcionais fornecem contexto para casos que precisam de UX específica (como mostrar quantas submissões ainda tem disponíveis).
+The `eligible: boolean` return is the quick answer for the frontend to decide whether to show the submission button. The `status` enum allows rendering a specific message for each case. The optional fields provide context for cases that need specific UX (like showing how many submissions are still available).
 
-## Por que retornar contexto em vez de lançar exceção
+## Why return context instead of throwing an exception
 
-A primeira versão lançava uma `EligibilityError` com uma mensagem. O problema: a mensagem era string, e o frontend precisava parsear o texto para decidir _como_ exibir o erro.
+The first version threw an `EligibilityError` with a message. The problem: the message was a string, and the frontend needed to parse the text to decide _how_ to display the error.
 
-Isso é uma violação do princípio de que o contrato entre camadas deve ser tipado, não baseado em strings mágicas. Com o tipo `EligibilityStatus`, o frontend pode fazer:
+That's a violation of the principle that contracts between layers should be typed, not based on magic strings. With the `EligibilityStatus` type, the frontend can do:
 
 ```ts
 switch (eligibility.status) {
@@ -89,103 +96,103 @@ switch (eligibility.status) {
 }
 ```
 
-Cada estado produz um componente diferente, com props tipadas. Zero parsing de string.
+Each state produces a different component, with typed props. Zero string parsing.
 
-## A revisão por pares: três modos, uma tabela
+## Peer review: three modes, one table
 
-O JoBoEco suporta três modos de revisão:
+JoBoEco supports three review modes:
 
-- **OPEN**: avaliador vê o nome do autor, autor vê o nome do avaliador
-- **SINGLE_BLIND**: avaliador vê o nome do autor, autor **não** vê quem está avaliando
-- **DOUBLE_BLIND**: nem avaliador vê o autor, nem autor vê o avaliador
+- **OPEN**: the reviewer sees the author's name, the author sees the reviewer's name
+- **SINGLE_BLIND**: the reviewer sees the author's name, the author **does not** see who is reviewing
+- **DOUBLE_BLIND**: neither the reviewer sees the author, nor the author sees the reviewer
 
-Essa configuração fica em `siteSettings.reviewMode` e é aplicada no nível da API — não no frontend. Isso é importante: nunca confiar no cliente para censurar dados sensíveis.
+This configuration lives in `siteSettings.reviewMode` and is enforced at the API layer — not the frontend. This is important: never trust the client to censor sensitive data.
 
 ```ts title="src/app/api/admin/submissions/[id]/route.ts"
-const reviewMode = await getSiteConfig("reviewMode");
+const reviewMode = await getSiteConfig('reviewMode')
 
-// Se double blind, remove dados do autor antes de retornar para o avaliador
-if (reviewMode === "DOUBLE_BLIND" && userIsReviewer) {
-  submission.authorName = null;
-  submission.authorEmail = null;
-  submission.authorInstitution = null;
+// If double blind, remove author data before returning to the reviewer
+if (reviewMode === 'DOUBLE_BLIND' && userIsReviewer) {
+  submission.authorName = null
+  submission.authorEmail = null
+  submission.authorInstitution = null
 }
 ```
 
-A atribuição de avaliadores para submissões é feita por área de conhecimento — cada avaliador é associado a uma ou mais áreas, e o admin atribui submissões dentro dessas áreas. Isso evita atribuir um especialista em Ecologia para avaliar um trabalho de Botânica Sistemática.
+Reviewer assignment to submissions is done by knowledge area — each reviewer is associated with one or more areas, and the admin assigns submissions within those areas. This prevents assigning an Ecology specialist to review a work on Systematic Botany.
 
-O modelo de dados da atribuição ficou assim:
+The assignment data model ended up like this:
 
 ```sql
 reviewerAreaAssignments {
-  reviewerId,   -- usuário com role AVALIADOR
-  areaId,       -- área de conhecimento
-  eventId       -- específico por evento
+  reviewerId,   -- user with REVIEWER role
+  areaId,       -- knowledge area
+  eventId       -- specific per event
 }
 
 submissionReviews {
   submissionId,
   reviewerId,
-  score,        -- numérico
-  recommendation,  -- APROVADO | REPROVADO | REVISAO
-  comments,     -- feedback para o autor
+  score,           -- numeric
+  recommendation,  -- APPROVED | REJECTED | REVISION
+  comments,        -- feedback for the author
   createdAt
 }
 ```
 
-Uma decisão que tomei conscientemente: **não implementar auto-atribuição de avaliadores**. O algoritmo de matching é tentador de automatizar (balancear carga por avaliador, verificar conflito de interesse, garantir pelo menos N avaliações por submissão), mas para o volume do JoBoEco, a complexidade não justifica o benefício. O admin faz a atribuição manual pelo painel e tem controle total sobre o processo. Simples ganha.
+A decision I made consciously: **not implementing auto-assignment of reviewers**. The matching algorithm is tempting to automate (balance workload per reviewer, check for conflicts of interest, ensure at least N reviews per submission), but for JoBoEco's volume, the complexity doesn't justify the benefit. The admin makes assignments manually through the panel and has full control over the process. Simple wins.
 
-## O painel administrativo como eixo central
+## The admin panel as the central axis
 
-Uma das melhores decisões arquiteturais foi tornar o painel admin o lugar onde **toda configuração de comportamento é gerenciada em runtime**.
+One of the best architectural decisions was making the admin panel the place where **all behavior configuration is managed at runtime**.
 
-Coisas que o admin pode alterar sem redeploy:
+Things the admin can change without a redeploy:
 
-- Abrir/fechar submissões (`submissoesAbertas`)
-- Abrir/fechar publicação dos anais (`anaisAtivo`)
-- Modo de revisão (open / single-blind / double-blind)
-- Limite global de submissões por evento
-- Cotas de submissão gratuita por categoria
-- Taxa de submissão por área
-- Signatários dos certificados (nome e cargo)
-- Conteúdo dos editais
+- Open/close submissions (`submissionsOpen`)
+- Open/close proceedings publication (`proceedingsActive`)
+- Review mode (open / single-blind / double-blind)
+- Global submission limit per event
+- Free submission quotas per category
+- Submission fee per area
+- Certificate signatories (name and title)
+- Call for papers content
 
-Isso é implementado como um `siteSettings` no banco D1, com chave-valor:
+This is implemented as `siteSettings` in the D1 database, with key-value pairs:
 
 ```ts
-// Leitura
-const value = await getSiteConfig("reviewMode");
+// Reading
+const value = await getSiteConfig('reviewMode')
 
-// Atualização pelo admin
-await setSiteConfig("reviewMode", "DOUBLE_BLIND");
+// Admin update
+await setSiteConfig('reviewMode', 'DOUBLE_BLIND')
 ```
 
-O benefício prático: durante o evento, a organização pode mudar o modo de revisão, fechar submissões ou atualizar os signatários dos certificados **sem precisar me chamar para fazer um deploy**. Para um sistema usado em contextos acadêmicos formais, essa autonomia é importante.
+The practical benefit: during the event, the organization can change the review mode, close submissions, or update certificate signatories **without needing to call me for a deploy**. For a system used in formal academic contexts, that autonomy matters.
 
-## O anti-padrão que evitei
+## The anti-pattern I avoided
 
-Existe um anti-padrão comum em sistemas como esse: **colocar lógica de negócio em componentes React** ou em API routes de forma distribuída.
+There's a common anti-pattern in systems like this: **putting business logic in React components** or in API routes in a distributed way.
 
-O resultado disso é que a mesma verificação — "o usuário pode submeter?" — fica replicada em N lugares: no componente que mostra o botão, na API que processa a submissão, no componente de listagem que mostra o status. Qualquer mudança de regra precisa ser propagada para todos esses lugares manualmente.
+The result is that the same check — "can the user submit?" — gets duplicated across N places: the component that shows the button, the API that processes the submission, the listing component that shows the status. Any rule change needs to be propagated to all those places manually.
 
-A solução é antiga e não tem nada de novo: **uma função de domínio pura que sabe tudo sobre elegibilidade, chamada uma vez**. O componente exibe o resultado. A API valida novamente (você nunca confia só no cliente). A lógica fica em um lugar só.
+The solution is old and has nothing new about it: **a pure domain function that knows everything about eligibility, called once**. The component displays the result. The API validates again (you never trust just the client). The logic lives in one place.
 
 ```
 Handler → checkSubmissionEligibility(input) → EligibilityContext → render UI
-API     → checkSubmissionEligibility(input) → EligibilityContext → aceita ou rejeita
+API     → checkSubmissionEligibility(input) → EligibilityContext → accept or reject
 ```
 
-Parece óbvio no papel. É difícil de manter quando você está com pressa.
+It sounds obvious on paper. It's hard to maintain when you're in a hurry.
 
-## Testando o motor de eligibilidade
+## Testing the eligibility engine
 
-Esse foi o módulo com mais testes unitários do projeto. Não por dogma, mas porque a complexidade justifica: quando você tem 8 dimensões de verificação e qualquer combinação pode ser o caso real de um usuário, você precisa de cobertura para manter confiança nas mudanças.
+This was the module with the most unit tests in the project. Not out of dogma, but because the complexity justifies it: when you have 8 verification dimensions and any combination could be a real user's situation, you need coverage to maintain confidence in changes.
 
-O padrão de teste ficou assim:
+The test pattern ended up like this:
 
 ```ts title="src/__tests__/eligibility.test.ts"
-describe("checkSubmissionEligibility", () => {
-  it("retorna ELIGIBLE quando todas as condições são atendidas", () => {
+describe('checkSubmissionEligibility', () => {
+  it('returns ELIGIBLE when all conditions are met', () => {
     const result = checkSubmissionEligibility({
       submissionsOpen: true,
       isEnrolled: true,
@@ -195,29 +202,29 @@ describe("checkSubmissionEligibility", () => {
       freeQuotaUsed: 0,
       freeQuotaTotal: 2,
       globalLimitReached: false,
-    });
+    })
 
-    expect(result.eligible).toBe(true);
-    expect(result.status).toBe("ELIGIBLE");
-  });
+    expect(result.eligible).toBe(true)
+    expect(result.status).toBe('ELIGIBLE')
+  })
 
-  it("retorna ENROLLMENT_PROOF_PENDING quando prova pendente bloqueia", () => {
+  it('returns ENROLLMENT_PROOF_PENDING when a pending proof blocks submission', () => {
     const result = checkSubmissionEligibility({
       // ...
       enrollmentProofRequired: true,
-      enrollmentProofStatus: "PENDING",
-    });
+      enrollmentProofStatus: 'PENDING',
+    })
 
-    expect(result.eligible).toBe(false);
-    expect(result.status).toBe("ENROLLMENT_PROOF_PENDING");
-  });
+    expect(result.eligible).toBe(false)
+    expect(result.status).toBe('ENROLLMENT_PROOF_PENDING')
+  })
 
-  // ... um teste por caminho bloqueável
-});
+  // ... one test per blockable path
+})
 ```
 
-Cada estado de bloqueio tem seu próprio teste. Qualquer refatoração nas regras quebra os testes antes de quebrar a produção.
+Each blocking state has its own test. Any refactor of the rules breaks the tests before breaking production.
 
 ---
 
-Na próxima — e última — parte da série, falo dos dois sistemas que mais me orgulho no projeto: os **certificados com verificação offline via HMAC**, e a **publicação de anais com busca textual e exportação BibTeX**. Mais o check-in via QR Code e os aprendizados do primeiro evento real.
+In the next — and last — part of the series, I talk about the two systems I'm most proud of in the project: **certificates with offline verification via HMAC**, and **proceedings publication with full-text search and BibTeX export**. Plus QR Code check-in and the lessons from the first real event.
