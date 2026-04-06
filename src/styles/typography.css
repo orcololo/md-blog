@@ -17,7 +17,25 @@
   h4,
   h5,
   h6 {
-    @apply text-balance;
+    @apply leading-none text-balance;
+  }
+
+  h1 {
+    letter-spacing: -0.04em;
+  }
+
+  h2 {
+    letter-spacing: -0.03em;
+  }
+
+  h3 {
+    letter-spacing: -0.02em;
+  }
+
+  h4,
+  h5,
+  h6 {
+    letter-spacing: -0.01em;
   }
 
   p {
@@ -104,11 +122,11 @@
     }
 
     :where(blockquote):not(:where(.not-prose, .not-prose *)) {
-      @apply [&_*]:text-muted-foreground small my-6 border-l-2 border-dashed pl-6;
+      @apply [&_*]:text-muted-foreground small my-6 border-l-2 pl-6;
     }
 
     :where(hr):not(:where(.not-prose, .not-prose *)) {
-      @apply my-8 border-t border-dashed;
+      @apply my-8 border-t;
     }
 
     :where(table):not(:where(.not-prose, .not-prose *)) {

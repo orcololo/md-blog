@@ -1,18 +1,36 @@
 ---
-import { SITE, SOCIAL_LINKS } from '@/consts'
+import { SITE, SOCIAL_LINKS, getNavLinks } from '@/consts'
+import { getLangFromUrl } from '@/i18n/utils'
+import Link from './Link.astro'
 import SocialIcons from './SocialIcons.astro'
+
+const lang = getLangFromUrl(Astro.url)
+const navLinks = getNavLinks(lang)
 ---
 
-<footer class="mt-auto border-t border-dashed">
+<footer class="mt-auto border-t">
   <div
-    class="mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-y-3 px-4 py-6 sm:flex-row sm:justify-between"
+    class="mx-auto flex w-full max-w-3xl flex-col gap-y-6 px-4 py-8 sm:gap-y-0"
   >
-    <span class="text-muted-foreground font-mono text-xs">
-      <span class="text-primary">&#x25B8;</span>
-      {SITE.author} &copy; {new Date().getFullYear()}<span
-        class="animate-blink text-primary ml-0.5">_</span
-      >
-    </span>
-    <SocialIcons links={SOCIAL_LINKS} />
+    <div
+      class="flex flex-col items-start justify-between gap-y-4 sm:flex-row sm:items-center"
+    >
+      <span class="text-muted-foreground text-sm">
+        {SITE.author} &copy; {new Date().getFullYear()}
+      </span>
+      <nav class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {
+          navLinks.map((item) => (
+            <Link
+              href={item.href}
+              class="text-muted-foreground hover:text-foreground text-xs tracking-widest uppercase transition-colors duration-150"
+            >
+              {item.label}
+            </Link>
+          ))
+        }
+      </nav>
+      <SocialIcons links={SOCIAL_LINKS} />
+    </div>
   </div>
 </footer>

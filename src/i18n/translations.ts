@@ -14,8 +14,11 @@ export const translations = {
     'nav.about': 'about',
 
     // Home
-    'home.latestPosts': '// latest posts',
-    'home.viewAll': 'ls -a posts/',
+    'home.latestPosts': 'Latest Posts',
+    'home.viewAll': 'View all posts',
+    'home.ctaAbout': 'About me',
+    'home.bio':
+      'Writing about programming, technology, and whatever catches my curiosity.',
 
     // Blog
     'blog.title': 'Blog',
@@ -29,11 +32,14 @@ export const translations = {
     'about.bio':
       'I write about programming, technology, and whatever catches my curiosity. This is my corner of the internet where I share what I learn along the way.',
     'about.builtWith': 'Built with',
-    'about.projects': '// projects',
+    'about.projects': 'Projects',
 
     // 404
     '404.error': 'Error 404: page not found',
-    '404.description': 'The requested URL was not found on this server.',
+    '404.description':
+      "The page you were looking for doesn't exist or has been moved.",
+    '404.backHome': 'Back to home',
+    '404.viewBlog': 'View blog',
 
     // Authors
     'authors.title': 'Authors',
@@ -85,8 +91,11 @@ export const translations = {
     'nav.about': 'sobre',
 
     // Home
-    'home.latestPosts': '// últimos posts',
-    'home.viewAll': 'ls -a posts/',
+    'home.latestPosts': 'Últimos Posts',
+    'home.viewAll': 'Ver todos os posts',
+    'home.ctaAbout': 'Sobre mim',
+    'home.bio':
+      'Escrevendo sobre programação, tecnologia e o que mais me der curiosidade.',
 
     // Blog
     'blog.title': 'Blog',
@@ -100,11 +109,13 @@ export const translations = {
     'about.bio':
       'Escrevo sobre programação, tecnologia e o que mais me der curiosidade. Esse é meu cantinho da internet onde compartilho o que aprendo pelo caminho.',
     'about.builtWith': 'Feito com',
-    'about.projects': '// projetos',
+    'about.projects': 'Projetos',
 
     // 404
     '404.error': 'Erro 404: página não encontrada',
-    '404.description': 'A URL solicitada não foi encontrada neste servidor.',
+    '404.description': 'A página que você procura não existe ou foi movida.',
+    '404.backHome': 'Voltar ao início',
+    '404.viewBlog': 'Ver blog',
 
     // Authors
     'authors.title': 'Autores',

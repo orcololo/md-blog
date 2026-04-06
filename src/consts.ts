@@ -8,7 +8,7 @@ export const SITE: Site = {
   href: 'https://orcololo.vercel.app',
   author: 'orcololo',
   locale: 'en-US',
-  featuredPostCount: 3,
+  featuredPostCount: 5,
   postsPerPage: 5,
 }
 
@@ -64,6 +64,15 @@ export const SOCIAL_LINKS: SocialLink[] = [
     label: 'RSS',
   },
 ]
+
+/**
+ * Set to an object to show an announcement bar.
+ * Set to null to hide it.
+ */
+export const ANNOUNCEMENT: { text: string; href: string } | null = {
+  text: 'New post: Mobile Navigation & Subposts',
+  href: '/blog/mobile-nav-and-subposts',
+}
 
 export const ICON_MAP: IconMap = {
   Website: 'lucide:globe',

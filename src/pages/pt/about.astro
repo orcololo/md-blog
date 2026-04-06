@@ -3,7 +3,6 @@ import Breadcrumbs from '@/components/Breadcrumbs.astro'
 import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import ProjectCard from '@/components/ProjectCard.astro'
-import TerminalWindow from '@/components/TerminalWindow.astro'
 import { SITE } from '@/consts'
 import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 import Layout from '@/layouts/Layout.astro'
@@ -19,22 +18,30 @@ const projects = await getAllProjects()
   <Breadcrumbs items={[{ label: t('about.title'), icon: 'lucide:info' }]} />
 
   <section class="flex flex-col gap-y-8">
-    <TerminalWindow title={`about — ${SITE.author}`} class="animate-fade-in-up">
-      <div class="space-y-2 text-sm">
-        <div class="flex gap-2">
-          <span class="text-primary shrink-0">~</span>
-          <span class="text-muted-foreground shrink-0">$</span>
-          <span>cat README.md</span>
-        </div>
-        <div class="text-foreground/80 mt-3 space-y-3 border-t pt-3 font-sans">
-          <p>
+    <div
+      class="animate-fade-in-up bg-card overflow-hidden rounded-[8px] border"
+    >
+      <div class="bg-primary h-1 w-full"></div>
+      <div class="space-y-4 p-6 sm:p-8">
+        <div>
+          <p
+            class="text-muted-foreground mb-2 text-xs font-medium tracking-widest uppercase"
+          >
+            {t('about.title')}
+          </p>
+          <h1
+            class="text-foreground text-2xl leading-none font-normal tracking-[-0.03em] sm:text-3xl"
+          >
             {t('about.intro')}
-            <strong class="text-foreground">{SITE.title}</strong>
-            {t('about.description')}
-          </p>
-          <p>
-            {t('about.bio')}
-          </p>
+            <strong class="font-medium">{SITE.title}</strong>{
+              t('about.description')
+            }
+          </h1>
+        </div>
+        <div
+          class="text-foreground/80 space-y-3 border-t pt-4 text-sm leading-relaxed"
+        >
+          <p>{t('about.bio')}</p>
           <p>
             {t('about.builtWith')}
             <Link href="https://astro.build" external underline>Astro</Link>, <Link
@@ -47,11 +54,11 @@ const projects = await getAllProjects()
           </p>
         </div>
       </div>
-    </TerminalWindow>
+    </div>
 
     <div class="animate-fade-in-up" style="animation-delay: 150ms">
       <h2
-        class="text-muted-foreground mb-4 font-mono text-xs tracking-widest uppercase"
+        class="text-muted-foreground mb-4 text-xs font-medium tracking-widest uppercase"
       >
         {t('about.projects')}
       </h2>

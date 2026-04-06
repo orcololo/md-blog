@@ -1,0 +1,92 @@
+---
+import BlogCard from '@/components/BlogCard.astro'
+import PageHead from '@/components/PageHead.astro'
+import PaginationComponent from '@/components/ui/pagination'
+import { SITE } from '@/consts'
+import { getLangFromUrl, useTranslations } from '@/i18n/utils'
+import Layout from '@/layouts/Layout.astro'
+import { getAllPosts, groupPostsByYear } from '@/lib/data-utils'
+import type { PaginateFunction } from 'astro'
+
+export async function getStaticPaths({
+  paginate,
+}: {
+  paginate: PaginateFunction
+}) {
+  const allPosts = await getAllPosts('en')
+  return paginate(allPosts, { pageSize: SITE.postsPerPage })
+}
+
+const { page } = Astro.props
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
+
+const isFirstPage = page.currentPage === 1
+const postsByYear = groupPostsByYear(page.data)
+const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title={isFirstPage
+      ? 'Home'
+      : `${t('blog.title')} — ${t('blog.page')} ${page.currentPage}`}
+  />
+  <section class="flex flex-col gap-y-8">
+    {
+      isFirstPage && (
+        <div class="animate-fade-in-up bg-card overflow-hidden rounded-[8px] border">
+          <div class="bg-primary h-1 w-full" />
+          <div class="p-6 sm:p-8">
+            <p class="text-muted-foreground mb-3 text-xs font-medium tracking-widest uppercase">
+              {SITE.author}
+            </p>
+            <h1 class="text-foreground mb-4 text-3xl leading-none font-normal tracking-[-0.04em] sm:text-4xl">
+              {SITE.description}
+            </h1>
+            <p class="text-muted-foreground max-w-xl text-sm leading-relaxed">
+              {t('home.bio')}
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    <div class="flex min-h-[calc(100vh-18rem)] flex-col gap-y-8">
+      {
+        years.map((year, yi) => (
+          <section
+            class="animate-fade-in-up flex flex-col gap-y-4"
+            style={`animation-delay: ${yi * 100}ms`}
+          >
+            <div class="text-muted-foreground text-xs font-medium tracking-widest uppercase">
+              {year}
+            </div>
+            <ul class="flex flex-col gap-4">
+              {postsByYear[year].map((post, pi) => (
+                <li
+                  class="animate-fade-in-up"
+                  style={`animation-delay: ${yi * 100 + (pi + 1) * 80}ms`}
+                >
+                  <BlogCard entry={post} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+
+    {
+      page.lastPage > 1 && (
+        <PaginationComponent
+          currentPage={page.currentPage}
+          totalPages={page.lastPage}
+          baseUrl="/"
+          client:load
+        />
+      )
+    }
+  </section>
+</Layout>

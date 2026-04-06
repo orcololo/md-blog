@@ -103,12 +103,30 @@ What distinguishes Intercom is its remarkably sharp geometry — 4px border-radi
 - Padding: 16px
 - Border: `1px solid oklab(... / 0.1)`
 
+**CTA Button Pair**
+
+Always place Primary Dark + Outlined side by side. Never two dark buttons together.
+
+```html
+<button class="btn-primary">Start free trial</button>
+<button class="btn-outline">View demo</button>
+```
+
+- Gap between pair: `16px`
+- Hierarchy: dark > outline, always in that order
+
 ### Cards & Containers
 
 - Background: `#faf9f6` (warm cream)
 - Border: `1px solid #dedbd6` (warm oat)
 - Radius: 8px
 - No visible shadows
+
+**Orange Accent Card** (hero / profile cards)
+
+- Top border stripe: `height: 4px; background: #ff5600; width: 100%`
+- Gives visual anchor without color overuse
+- Used on featured/hero cards only
 
 ### Navigation
 
@@ -117,17 +135,179 @@ What distinguishes Intercom is its remarkably sharp geometry — 4px border-radi
 - Small 4px–6px radius buttons
 - Orange Fin accent for AI features
 
+### Announcement Bar
+
+Thin full-width bar pinned above the navigation.
+
+- Background: `#111111`
+- Text: `#ffffff`, `font-size: 13px`, centered
+- Link/CTA text: `#ff5600`, underline on hover
+- Height: `~40px`, `padding: 0 16px`
+- One message only — no carousel, no close button
+
+```html
+<div class="announcement-bar">
+  The age of vertical models is here — meet Fin Apex 1.0
+  <a href="#">Learn more →</a>
+</div>
+```
+
+### Category Pill (Section Label)
+
+Uppercase label that precedes a section heading. Appears above every major section.
+
+- Text color: `#ff5600` (accent sections) or `#7b7b78` (neutral sections)
+- Font: `SaansMono` or fallback monospace, `11–12px`, `letter-spacing: 1.2px`, `uppercase`
+- No background, no border — pure text only
+- Margin-bottom: `12px` before the heading
+
+```html
+<p class="category-pill">FIN AI AGENT</p>
+<h2>A world-class AI Agent</h2>
+```
+
+### Feature Accordion
+
+Expandable feature list with `+` / `−` indicator.
+
+- Each row: `border-bottom: 1px solid #dedbd6`
+- Padding: `16–20px` vertical, `0` horizontal
+- Collapsed: show title + `+` icon right-aligned
+- Expanded: show title + `−` icon + body text with `padding-top: 12px`
+- Body text: `font-size: 14px`, `color: #7b7b78`, `line-height: 1.6`
+- Transition: `max-height` with `ease-out 200ms`
+
+### Testimonial / Quote Block
+
+Four-part quote composition: large quotation mark, quote body, attribution name + role, portrait.
+
+- Quote text: `font-size: 20px`, `line-height: 1.5`, `color: #111111`, NOT italic
+- Attribution: `font-size: 14px`, `color: #7b7b78`
+- Portrait: `border-radius: 50%`, `width: 56–64px`, `height: 56–64px`
+- Quotation mark: decorative `"`, `font-size: 80px`, `color: #ff5600`, `line-height: 0`
+- Container options:
+  - Light: `background: #faf9f6`, `border: 1px solid #dedbd6`, `border-radius: 8px`
+  - Dark: `background: #111111`, text `#ffffff`, portrait border `2px solid #ff5600`
+
+### Logo Ticker (Marquee)
+
+Horizontal infinite scroll of client logos.
+
+- Container: `overflow: hidden`, `background: #faf9f6`
+- Logos: `filter: grayscale(100%)`, `opacity: 0.5`, hover `opacity: 1 grayscale(0%)` with `transition: 200ms`
+- Gap between logos: `48–64px`
+- Animation: `@keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }`, `linear`, `infinite`
+- Speed: `~40s` for full cycle
+- Duplicate the logo list to create seamless loop
+
+```css
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track {
+  display: flex;
+  gap: 60px;
+  animation: marquee 40s linear infinite;
+  width: max-content;
+}
+```
+
+### Background Photo + Product UI Overlay
+
+Full-bleed editorial photo as section background with product screenshot layered on top.
+
+- Background image: `object-fit: cover`, `filter: brightness(0.85)`, fills container
+- Product UI card: `position: absolute` or `z-index: 10`, `border-radius: 8px`, `box-shadow: 0 24px 48px rgba(0,0,0,0.18)`
+- Container: `position: relative`, `overflow: hidden`
+- Image subjects: natural/organic (kites, ocean, sky, foliage) — never stock office photos
+- Minimum section height: `480px` desktop, `320px` mobile
+
+### Footer Mega-Menu
+
+Multi-column footer with grouped link categories.
+
+- Layout: `5–6 columns`, `gap-x: 40–48px`, `padding: 60–80px 0`
+- Group heading: `font-size: 11px`, `letter-spacing: 1.2px`, `uppercase`, `color: #111111`, `font-weight: 500`, `margin-bottom: 16px`
+- Links: `font-size: 14px`, `color: #7b7b78`, `hover: color #111111`, line-height `2.0` for breathing room
+- Bottom row: copyright left, legal links right (`Terms · Privacy · Security`), separated by `border-top: 1px solid #dedbd6`
+- Column categories used by Intercom: HELPDESK FEATURES / FIN FEATURES / PRICING / LEARN / EVALUATE / SUPPORT / COMPANY / PROGRAMS
+
 ## 5. Layout Principles
 
 ### Spacing: 8px, 10px, 12px, 14px, 16px, 20px, 24px, 32px, 40px, 48px, 60px, 64px, 80px, 96px
 
 ### Border Radius: 4px (buttons), 6px (nav items), 8px (cards, containers)
 
+### Section Anatomy
+
+Every major section follows this structure:
+
+```
+[Category Pill]         ← SaansMono 12px, #ff5600 or #7b7b78, uppercase
+[Section Heading]       ← 54px, leading-none, tracking -1.6px
+[Sub-copy]              ← 16–20px, color #7b7b78, max-width 560px
+[CTA Button Pair]       ← Primary Dark + Outlined, gap 16px
+[Visual]                ← Photo overlay, product UI, or illustration
+```
+
+### Feature Section Layout (Alternating)
+
+Sections alternate between:
+
+- **Left text + Right visual**
+- **Right text + Left visual**
+
+Each panel: `min-height: 480px`, `padding: 80px 0`, divider `border-top: 1px solid #dedbd6`.
+
 ## 6. Depth & Elevation
 
 Minimal shadows. Depth through warm border colors and surface tints.
 
-## 7. Do's and Don'ts
+- **Level 0** (flat): No shadow. Cards on cream background.
+- **Level 1** (raised): Product UI over photo — `box-shadow: 0 24px 48px rgba(0,0,0,0.18)`
+- **Level 2** (floating): Tooltips/dropdowns — `box-shadow: 0 8px 24px rgba(0,0,0,0.12)`
+
+## 7. Motion & Animation
+
+### Principles
+
+- Prefer `ease-out` for enter animations, `ease-in` for exits
+- Never animate color alone — pair with transform
+- Respect `prefers-reduced-motion`: wrap all animations in the media query
+
+### Defined Animations
+
+| Name          | Trigger    | Transform                        | Duration | Easing   |
+| ------------- | ---------- | -------------------------------- | -------- | -------- |
+| Button hover  | `:hover`   | `scale(1.1)`                     | 150ms    | ease-out |
+| Button active | `:active`  | `scale(0.85)`                    | 100ms    | ease-in  |
+| Fade in up    | On mount   | `opacity 0→1, translateY 12px→0` | 400ms    | ease-out |
+| Logo ticker   | Continuous | `translateX(-50%)`               | 40s      | linear   |
+| Accordion     | Click      | `max-height 0→auto`              | 200ms    | ease-out |
+| Tab switch    | Click      | `opacity 0→1`                    | 250ms    | ease-out |
+
+### Staggered Entry
+
+When multiple cards/items enter the viewport, delay each by `80–100ms`:
+
+```css
+li:nth-child(1) {
+  animation-delay: 0ms;
+}
+li:nth-child(2) {
+  animation-delay: 100ms;
+}
+li:nth-child(3) {
+  animation-delay: 200ms;
+}
+```
+
+## 8. Do's and Don'ts
 
 ### Do
 
@@ -136,19 +316,37 @@ Minimal shadows. Depth through warm border colors and surface tints.
 - Use Fin Orange (#ff5600) for AI/brand accent only
 - Apply scale(1.1) hover on buttons
 - Use warm neutrals (#faf9f6, #dedbd6)
+- Always pair CTA buttons: Primary Dark + Outlined
+- Place a Category Pill above every major section heading
+- Use grayscale logos for the ticker; color on hover only
+- Use organic/natural photography (sky, water, foliage) for backgrounds
+- Use a 4px orange top-stripe on featured/hero cards
 
 ### Don't
 
 - Don't round buttons beyond 4px
-- Don't use Fin Orange decoratively
+- Don't use Fin Orange decoratively — it signals accent/brand only
 - Don't use cool gray borders — always warm oat tones
 - Don't skip the negative tracking on headings
+- Don't use two Primary Dark buttons side by side
+- Don't use stock office photography — only natural, editorial imagery
+- Don't add drop shadows to cards on the warm cream background
+- Don't use the announcement bar for more than one message at a time
 
-## 8. Responsive Behavior
+## 9. Responsive Behavior
 
 Breakpoints: 425px, 530px, 600px, 640px, 768px, 896px
 
-## 9. Agent Prompt Guide
+### Mobile Adaptations
+
+- Hero: single column, heading scales from 80px → 40px
+- Feature sections: stack vertically, visual moves below text
+- Footer mega-menu: collapse to 2 columns, then 1 on mobile
+- Logo ticker: reduce speed to 25s on mobile
+- Announcement bar: truncate text with `…` if needed, keep link visible
+- Accordion: always visible on mobile (no hover states)
+
+## 10. Agent Prompt Guide
 
 ### Quick Color Reference
 
@@ -158,6 +356,24 @@ Breakpoints: 425px, 530px, 600px, 640px, 768px, 896px
 - Border: Oat (`#dedbd6`)
 - Muted: `#7b7b78`
 
-### Example Component Prompts
+### Component Prompt Templates
 
-- "Create hero: warm cream (#faf9f6) background. Saans 80px weight 400, line-height 1.00, letter-spacing -2.4px, #111111. Dark button (#111111, 4px radius). Hover: scale(1.1), white bg."
+**Hero Section**
+
+> "Warm cream (#faf9f6) canvas. Category pill 'BLOG' in SaansMono 12px #ff5600 uppercase tracking-widest. H1: 80px weight 400 leading-none tracking -2.4px #111111. Sub-copy: 20px #7b7b78. CTA pair: dark button (#111111, 4px radius, hover scale(1.1)) + outlined button. Right side: editorial photo mosaic."
+
+**Feature Card with Orange Stripe**
+
+> "Card: background #faf9f6, border 1px solid #dedbd6, radius 8px. Orange top stripe 4px full-width #ff5600. Category pill above heading inside card. Body text 14px #7b7b78."
+
+**Testimonial Block**
+
+> "Quote: decorative large ' in #ff5600. Quote body 20px #111111 not italic. Attribution 14px #7b7b78. Circular portrait 60px with 2px #ff5600 border. Background #faf9f6, border 1px solid #dedbd6, radius 8px."
+
+**Announcement Bar**
+
+> "Full-width bar, background #111111, text white 13px centered. Link 'Learn more →' in #ff5600. Height 40px."
+
+**Logo Ticker**
+
+> "Overflow hidden container. Logos grayscale opacity-50, hover full color. Gap 60px. CSS marquee 40s linear infinite. Duplicate list for seamless loop."

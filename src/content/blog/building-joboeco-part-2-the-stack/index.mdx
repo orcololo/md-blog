@@ -1,0 +1,143 @@
+---
+title: 'Construindo o JoBoEco, Parte 2: apostando tudo na Cloudflare'
+description: 'Parte 2 de 5 — Por que escolhi Next.js no Cloudflare Workers com D1 e R2 em vez do caminho óbvio Vercel + PostgreSQL. Os tradeoffs reais, o que funcionou, e o que eu mudaria hoje.'
+date: 2026-04-14
+tags: ['joboeco', 'cloudflare', 'nextjs', 'drizzle-orm', 'cloudflare-d1', 'opennext', 'stack']
+authors: ['orcololo']
+published: true
+lang: pt
+series: 'Construindo o JoBoEco'
+seriesPart: 2
+---
+
+## O caminho óbvio
+
+Se você vai construir uma aplicação web com Next.js em 2025, o caminho mais óbvio é:
+
+- **Deploy**: Vercel
+- **Banco de dados**: Neon, PlanetScale, ou outro PostgreSQL gerenciado
+- **Storage**: AWS S3 ou Cloudflare R2
+- **ORM**: Prisma ou Drizzle
+- **Auth**: NextAuth.js ou Clerk
+
+É a stack "empresa de um desenvolvedor" que funciona, tem documentação, tem Stack Overflow. Eu considerei esse caminho seriamente.
+
+E fui para outro.
+
+## O fator custo
+
+A razão principal foi custo — não o custo de hoje, mas o custo de _escala_.
+
+O JoBoEco é um sistema para eventos acadêmicos universitários. O padrão de uso é interessante: **picos enormes em janelas muito específicas** (quando inscrições abrem, quando o prazo de submissão fecha, no dia do evento) e **praticamente zero tráfego** no restante do tempo. Uma event-driven application no sentido mais literal.
+
+No Vercel, você paga por execuções de função. A conta de um evento com mil inscrições numa janela de 8 horas pode ser irrelevante — ou pode explodir dependendo do que está acontecendo na aplicação. O modelo de pricing serverless tem essa imprevisibilidade.
+
+No **Cloudflare Workers**, o plano gratuito inclui 100.000 requests por dia. O plano pago ($5/mês) cobre 10 milhões de requests por mês. Para o volume do JoBoEco, isso é essencialmente gratuito.
+
+O **D1** (banco SQLite da Cloudflare) tem no plano gratuito: 5 milhões de leituras e 100k gravações por dia. Comparando com Neon ou PlanetScale — com planos gratuitos bem mais restritivos em conexões concorrentes e branches — o D1 se mostrou muito mais generoso para o padrão de uso do projeto.
+
+O **R2** não cobra por egress (transferência de dados para fora do bucket). Para documentos de submissão, logos de evento, comprovantes de matrícula e modelos para download, isso evita uma categoria inteira de custo variável.
+
+A conclusão no papel: **Cloudflare Workers + D1 + R2 = stack que roda no free tier para o volume típico do JoBoEco**. Isso não é uma vantagem marginal — é a diferença entre um projeto sustentável e um que precisa de patrocínio para pagar as contas de infraestrutura.
+
+## O risco real: D1 é SQLite distribuído
+
+Aqui preciso ser honesto sobre o tradeoff, porque ele é real.
+
+O D1 é SQLite rodando na infraestrutura da Cloudflare, distribuído pela edge. Em termos práticos, isso significa algumas limitações:
+
+1. **Schema migrations são mais simples** — SQLite tem menos tipos nativos que PostgreSQL. Não tem `ENUM`, não tem arrays, não tem JSONB com índices GIN. Simulei ENUMs com colunas `TEXT` com validação na camada de aplicação.
+
+2. **Sem conexões concorrentes no sentido tradicional** — cada Worker invocation cria sua própria conexão ao D1. Isso tem implicações para read-modify-write atomics em cenários de alta concorrência.
+
+3. **Sem extensões** — nada de PostGIS, pg_trgm, ou qualquer outra extension. Para busca textual simples usei `LIKE`, que funciona para o volume do projeto.
+
+Para o JoBoEco, nenhuma dessas limitações foi um bloqueador real. O schema é relacional mas não extremamente complexo — as queries são praticamente todas `SELECT` com `JOIN`s diretos, sem necessidade de CTEs recursivos ou window functions avançadas.
+
+O que me surpreendeu positivamente: **a latência**. Workers na edge + D1 na edge = respostas que parecem locais mesmo para usuários em regiões diferentes. Para uma aplicação como essa, onde a maioria dos usuários está no Brasil e o deploy está em região sul-americana, o benefício é concreto.
+
+O que me fez falta: **observabilidade nativa**. O tooling do D1 para inspecionar o banco em produção ainda é bem primário comparado ao PgAdmin ou ao console do Neon. O Drizzle Studio preenche parte dessa lacuna, mas não é a mesma coisa.
+
+## Por que Drizzle e não Prisma
+
+Quando o projeto começou, o Prisma ainda não tinha suporte estável para D1. O Drizzle tinha. Fim da história do ponto de vista técnico.
+
+Mas mesmo que o Prisma tivesse suporte, eu provavelmente teria escolhido o Drizzle de qualquer forma. A filosofia é diferente: **o Drizzle assume que você sabe SQL**, e usa TypeScript para tipificar as operações. O Prisma abstrai tanto o banco que, quando você precisa otimizar uma query específica, fica lutando contra a abstração.
+
+Com o Drizzle, o que você escreve é essencialmente SQL tipado. Não tem surpresa entre "o que eu escrevi" e "o que foi para o banco".
+
+Uma coisa que peguei cedo: o Drizzle abre uma `prepare` statement por query. Em Workers, onde a conexão é efêmera, isso tem um custo mínimo mas consistente. Para queries muito frequentes, vale usar `db.select().from()` diretamente em vez de criar prepared statements separadas.
+
+## Next.js App Router: a aposta que valeu
+
+Essa foi outra decisão que poderia ter ido mal. O App Router do Next.js, quando comecei o JoBoEco, estava em uma fase... interessante. Bom em teoria, bugs ativos na prática, documentação incompleta em certas partes.
+
+Por que fui com o App Router mesmo assim?
+
+Porque o **OpenNext** — a lib que faz o Next.js rodar em Cloudflare Workers — estava sendo desenvolvido prioritariamente para o App Router. O Pages Router tinha suporte melhor em um momento, mas o investimento da comunidade estava claramente no App Router. Ir contra essa direção seria comprar dívida técnica deliberadamente.
+
+A decisão valeu. O App Router hoje está estável, e a integração com o OpenNext está madura o suficiente para deploy em produção sem grandes surpresas. O bundle gerado ainda é maior do que eu gostaria (o deploy ultrapassa 12MB comprimidos), mas funciona.
+
+## OpenNext: o elo que faltava
+
+É impossível falar de Next.js em Cloudflare sem falar do OpenNext. Ele transforma o output do `next build` em um Worker bundle que o Wrangler consegue fazer o deploy. A configuração ficou bem enxuta:
+
+```ts title="open-next.config.ts"
+import type { OpenNextConfig } from "@opennextjs/cloudflare";
+
+const config: OpenNextConfig = {
+  default: {
+    override: {
+      wrapper: "cloudflare-node",
+      converter: "edge",
+      incrementalCache: async () => {
+        const { KVIncrementalCache } = await import(
+          "@opennextjs/cloudflare/kv-cache"
+        );
+        return new KVIncrementalCache();
+      },
+      queue: "dummy",
+      tagCache: "dummy",
+    },
+  },
+  middleware: {
+    external: true,
+  },
+};
+
+export default config;
+```
+
+O detalhe importante: `middleware: { external: true }`. Isso faz o middleware do Next.js rodar como um Worker separado, melhorando a latência para rotas protegidas — que no JoBoEco são a maioria.
+
+Tem um gotcha que me custou algumas horas: **Image Optimization do Next.js não funciona em Workers por padrão**. A solução foi desabilitar o optimizer nativo e servir as imagens diretamente via R2. Para os casos de uso do projeto isso não foi problema.
+
+## O stack de autenticação
+
+O NextAuth.js v4 com `CredentialsProvider` foi a escolha, mas não sem ressalvas. Funciona, mas a DX de customizar flows — como reset de senha com token expirado, ou reenvio de confirmação — é burocrática. Você acaba escrevendo muito boilerplate para casos que qualquer solução SaaS de auth resolve com uma linha de config.
+
+Se eu começasse hoje, avaliaria mais seriamente o **Auth.js v5** (a versão nova do NextAuth) ou o **Clerk**. O Clerk tem DX muito superior, mas tem custo a partir de certo volume. Para um projeto que precisa ser 100% viável no free tier, o NextAuth ainda faz sentido — mas com o v5, não o v4.
+
+## O resumo da stack
+
+| Camada         | Tecnologia               | Motivação principal                     |
+| -------------- | ------------------------ | --------------------------------------- |
+| Framework      | Next.js 16 (App Router)  | Ecosystem + suporte OpenNext            |
+| Runtime        | Cloudflare Workers       | Custo, latência edge                    |
+| Banco          | Cloudflare D1            | Custo, integração nativa com Workers    |
+| Storage        | Cloudflare R2            | Sem custo de egress                     |
+| ORM            | Drizzle ORM              | Suporte D1, SQL transparente            |
+| Auth           | NextAuth.js v4           | Disponível, funciona                    |
+| Deploy         | OpenNext + Wrangler      | Único caminho viável para CF Workers    |
+| Email          | Resend                   | API limpa, boa DX                       |
+| Pagamentos     | MercadoPago              | Único com boa API de Pix no Brasil      |
+
+## O que eu mudaria
+
+Muito pouco, honestamente. O stack provou ser sólido para o problema proposto. A única área onde tenho dúvidas genuínas é o auth — mas é um detalhe de DX, não de funcionalidade.
+
+O D1 como banco de produção foi a decisão mais arriscada no papel e a que mais me surpreendeu positivamente na prática. Se o projeto crescer para volumes maiores, uma eventual migração para PostgreSQL via Hyperdrive (também da Cloudflare) seria um caminho relativamente suave.
+
+---
+
+Na próxima parte, entro no que foi provavelmente a parte mais trabalhosa do sistema: **pagamentos via Pix com MercadoPago**. Webhooks que podem nunca chegar, polling que não pode ser ingênuo, e o esquema de `external_reference` que me salvou de ter que criar um sistema de lookup separado.

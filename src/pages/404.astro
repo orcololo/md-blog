@@ -2,11 +2,9 @@
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
 import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
-import TerminalWindow from '@/components/TerminalWindow.astro'
 import { buttonVariants } from '@/components/ui/button'
 import { getLangFromUrl, useTranslations } from '@/i18n/utils'
 import Layout from '@/layouts/Layout.astro'
-import { cn } from '@/lib/utils'
 
 const lang = getLangFromUrl(Astro.url)
 const t = useTranslations(lang)
@@ -14,40 +12,39 @@ const t = useTranslations(lang)
 
 <Layout class="max-w-3xl">
   <PageHead slot="head" title="404" />
-  <Breadcrumbs items={[{ label: '???', icon: 'lucide:circle-help' }]} />
+  <Breadcrumbs items={[{ label: '404', icon: 'lucide:circle-help' }]} />
 
-  <section class="flex flex-col items-center justify-center gap-y-6">
-    <TerminalWindow
-      title="error — 404"
-      class="animate-fade-in-up w-full max-w-lg"
-    >
-      <div class="space-y-2 text-sm">
-        <div class="flex gap-2">
-          <span class="text-primary shrink-0">~</span>
-          <span class="text-muted-foreground shrink-0">$</span>
-          <span>curl localhost{Astro.url.pathname}</span>
-        </div>
-        <p class="text-destructive">{t('404.error')}</p>
-        <p class="text-muted-foreground text-xs">
-          {t('404.description')}
-        </p>
-        <div class="flex gap-2 pt-2">
-          <span class="text-primary shrink-0">~</span>
-          <span class="text-muted-foreground shrink-0">$</span>
-          <span class="animate-blink text-primary">&#9610;</span>
-        </div>
-      </div>
-    </TerminalWindow>
-    <Link
-      href="/"
-      class={cn(
-        buttonVariants({ variant: 'outline' }),
-        'flex gap-x-1.5 group font-mono animate-fade-in-up',
-      )}
+  <section
+    class="flex flex-col items-center justify-center gap-y-8 py-16 text-center"
+  >
+    <div class="animate-fade-in-up space-y-4">
+      <p class="text-primary text-xs font-medium tracking-widest uppercase">
+        Error 404
+      </p>
+      <h1
+        class="text-foreground text-7xl leading-none font-normal tracking-[-0.04em] sm:text-8xl"
+      >
+        Page not found
+      </h1>
+      <p
+        class="text-muted-foreground mx-auto max-w-sm text-base leading-relaxed"
+      >
+        {t('404.description')}
+      </p>
+    </div>
+    <div
+      class="animate-fade-in-up flex flex-wrap items-center justify-center gap-4"
       style="animation-delay: 150ms"
     >
-      <span class="transition-transform group-hover:-translate-x-1">&larr;</span
-      > cd ~
-    </Link>
+      <Link href="/" class={buttonVariants({ variant: 'default' })}>
+        <span class="transition-transform group-hover:-translate-x-1"
+          >&larr;</span
+        >
+        {t('404.backHome')}
+      </Link>
+      <Link href="/blog" class={buttonVariants({ variant: 'outline' })}>
+        {t('404.viewBlog')}
+      </Link>
+    </div>
   </section>
 </Layout>

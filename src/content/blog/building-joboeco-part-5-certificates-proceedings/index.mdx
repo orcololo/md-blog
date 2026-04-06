@@ -1,0 +1,202 @@
+---
+title: 'Construindo o JoBoEco, Parte 5: certificados, anais e o primeiro evento real'
+description: 'Parte 5 de 5 — Como funciona a verificação de certificados sem banco de dados usando HMAC-SHA256, os anais com exportação BibTeX, o check-in via QR Code, e o que aprendi no primeiro evento real usando a plataforma.'
+date: 2026-05-05
+tags: ['joboeco', 'hmac', 'certificados', 'jspdf', 'bibtex', 'anais', 'qrcode']
+authors: ['orcololo']
+published: true
+lang: pt
+series: 'Construindo o JoBoEco'
+seriesPart: 5
+---
+
+## O problema dos certificados acadêmicos
+
+Certificados para eventos acadêmicos têm um requisito que a maioria dos sistemas de geração de certificados ignora: **eles precisam ser verificáveis anos depois**.
+
+Um participante pode precisar apresentar o certificado da JoBoEco 3 anos depois, num processo de avaliação de currículo. O verificador vai querer confirmar que aquele certificado é autêntico — que aquela pessoa realmente participou daquele evento.
+
+As abordagens comuns para isso são:
+
+1. **Banco de dados centralizado**: você entra numa URL, digita um código, e o sistema consulta o banco. Funciona enquanto você mantém o servidor e o banco ativos. Em 5 anos, quando o domínio expirar? Em 10 anos?
+
+2. **QR com URL**: o QR no certificado aponta para uma URL de verificação. Mesmo problema — depende de infraestrutura ativa.
+
+3. **Criptografia assimétrica**: você assina o conteúdo do certificado com uma chave privada. O verificador usa a chave pública para confirmar. Não depende de infraestrutura, mas a UX para o verificador é complexa.
+
+A abordagem que adotei foi outra: **HMAC-SHA256 com verificação sem banco**.
+
+## Como funciona o HMAC no certificado
+
+HMAC (Hash-based Message Authentication Code) é um mecanismo de autenticação de mensagens usando uma função hash e uma chave secreta. A ideia é simples: dado um `enrollmentId` e uma `CERT_SECRET` (variável de ambiente no servidor), o HMAC é determinístico — sempre produz o mesmo código para a mesma combinação.
+
+```ts title="src/lib/certificate.ts"
+import { createHmac } from "crypto";
+
+export function generateCertificateCode(enrollmentId: string): string {
+  return createHmac("sha256", process.env.CERT_SECRET!)
+    .update(enrollmentId)
+    .digest("hex")
+    .substring(0, 16) // 16 chars: legível e suficientemente único
+    .toUpperCase();
+}
+```
+
+Esse código é embutido como QR Code no PDF do certificado. A URL do QR aponta para `joboeco.org/certificado/verificar?code=XXXX&enrollment=yyy`.
+
+A página de verificação **não consulta o banco**. Ela recalcula o HMAC:
+
+```ts title="src/app/certificado/verificar/page.tsx"
+export default async function VerificacaoPage({ searchParams }) {
+  const { code, enrollment } = await searchParams;
+
+  const expectedCode = generateCertificateCode(enrollment);
+  const isValid = code === expectedCode;
+
+  return isValid ? <CertificadoValido /> : <CertificadoInvalido />;
+}
+```
+
+Se o código bate com o HMAC recalculado para aquele `enrollmentId`, o certificado é autêntico. Sem banco de dados. Sem chamada externa. Funciona enquanto o código de verificação existir — e o algoritmo HMAC continuar sendo aplicado da mesma forma.
+
+A limitação óbvia: se você precisar invalidar um certificado (o que raramente acontece, mas pode), você precisaria de uma lista de revogação — que reintroduz a dependência de banco. Para os casos de uso do JoBoEco, aceito esse tradeoff.
+
+## Geração de PDF no cliente
+
+A geração do PDF acontece **no navegador**, usando jsPDF. Não há endpoint de servidor que gere certificados.
+
+Por que no cliente?
+
+1. **Custo zero de processamento** no servidor — cada download é computação do dispositivo do usuário
+2. **Zero latência de download** — o PDF é gerado localmente e baixado imediatamente
+3. **Não há dados sensíveis trafegando** — o certificado é montado com dados que o frontend já tem
+
+```ts title="src/lib/certificate.ts"
+import jsPDF from "jspdf";
+
+export function generateCertificatePDF({
+  participantName,
+  eventName,
+  eventDate,
+  hoursLoad,
+  signatories,
+  certCode,
+  enrollmentId,
+}: CertificateData): Blob {
+  const doc = new jsPDF({ orientation: "landscape", format: "a4" });
+
+  // Layout, fontes, textos, logo do evento...
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.text(participantName, 148.5, 100, { align: "center" });
+
+  // QR Code com URL de verificação
+  const verificationUrl = `https://joboeco.org/certificado/verificar?code=${certCode}&enrollment=${enrollmentId}`;
+  // adiciona QR via qrcode.react convertido para data URL
+
+  return doc.output("blob");
+}
+```
+
+A limitação: customização visual do PDF é trabalhosa com jsPDF. É tudo posicionamento manual em pontos. Considerei usar `@react-pdf/renderer` (que tem uma API mais declarativa), mas ele não funciona em Cloudflare Workers e teria complicado o deploy. jsPDF funciona inteiramente no cliente, o que resolve o problema.
+
+Para os certificados do JoBoEco, o layout é institucional e estável — uma vez que ficou bom, não precisa mudar frequentemente. O custo de manutenção do jsPDF é aceitável.
+
+## Check-in via QR Code
+
+O check-in presencial usa `html5-qrcode` para leitura de QR Code pela câmera do dispositivo do organizador. O fluxo é:
+
+1. Participante mostra o QR Code da inscrição (disponível na área do participante)
+2. Organizador aponta a câmera do celular para o QR
+3. O sistema valida a inscrição e registra a presença
+4. Feedback imediato na tela: ✓ confirmado ou ✗ não encontrado/já registrado
+
+```ts title="src/app/organizador/checkin/page.tsx"
+import { Html5QrcodeScanner } from "html5-qrcode";
+
+// QR Code contém o enrollmentId
+function onScanSuccess(enrollmentId: string) {
+  fetch(`/api/checkin`, {
+    method: "POST",
+    body: JSON.stringify({ enrollmentId }),
+  })
+    .then((res) => res.json())
+    .then((data) => setCheckinResult(data));
+}
+```
+
+Simples, mas funcional. O organizador usa o celular pessoal, sem hardware adicional. Toda a lógica de validação fica no endpoint `/api/checkin`, que verifica se o `enrollmentId` existe, se a inscrição está paga, e se o check-in já foi feito (idempotência novamente).
+
+Um detalhe que faz diferença: o endpoint retorna um campo `alreadyCheckedIn`, e o frontend exibe uma mensagem diferente para "primeira vez aqui" vs "já fez check-in". Isso evita confusão quando alguém escaneia o mesmo QR duas vezes por acidente.
+
+O painel de organização também tem uma tabela com todos os check-ins em tempo real e export CSV para relatório de presença. O CSV foi surpreendentemente uma das features mais usadas.
+
+## Os anais acadêmicos
+
+A publicação dos anais é o módulo que, para o público do evento, tem mais valor percebido — e tecnicamente foi dos mais interessantes de construir.
+
+O portal de anais exibe todos os trabalhos aceitos na revisão, com:
+
+- **Busca textual** por título, resumo e autores
+- **Filtragem por área** de conhecimento
+- **Detalhes completos** de cada trabalho (título, autores, resumo, área)
+- **Download do PDF** do trabalho completo (se enviado), servido diretamente do R2
+- **Exportação BibTeX** de qualquer trabalho
+
+A busca é implementada com `LIKE` no D1, que para o volume dos anais (dezenas a algumas centenas de trabalhos) é suficientemente rápido. Não precisei de índice full-text nem de Algolia.
+
+O BibTeX foi a feature que eu mais gostei de implementar. O formato é familiar para qualquer acadêmico, e permite importar as referências diretamente no Zotero, Mendeley ou LaTeX:
+
+```ts title="src/lib/bibtex.ts"
+export function generateBibTeX(submission: SubmissionForBib): string {
+  const key = `${submission.authorLastName.toLowerCase()}${submission.year}${
+    submission.titleWords[0].toLowerCase()
+  }`;
+
+  return `@inproceedings{${key},
+  author    = {${submission.authorName}},
+  title     = {{${submission.title}}},
+  booktitle = {Anais da ${submission.eventName}},
+  year      = {${submission.year}},
+  address   = {${submission.eventCity}},
+  pages     = {${submission.pages ?? ""}},
+  note      = {${submission.area}}
+}`;
+}
+```
+
+```
+@inproceedings{silva2025floristica,
+  author    = {Silva, M. A.},
+  title     = {{Florística de epífitas vasculares em fragmento de Mata Atlântica}},
+  booktitle = {Anais da Jornada de Botânica e Ecologia},
+  year      = {2025},
+  address   = {São Carlos, SP},
+  note      = {Botânica Sistemática}
+}
+```
+
+Pequeno detalhe de UX que fez diferença: ao clicar em "copiar BibTeX", o texto é copiado para o clipboard e um toast confirma. Parece trivial, mas elimina o passo de "selecionar tudo > copiar" que a maioria dos sistemas exige.
+
+## O primeiro evento real
+
+Quando o JoBoEco foi ao ar pela primeira vez, num evento universitário real com algumas centenas de participantes, algumas coisas que eu esperava que fossem problemas não foram — e algumas coisas que eu não esperava quebraram.
+
+**O que funcionou melhor do que esperava**: o Pix. A taxa de conclusão do pagamento foi alta e não teve nenhuma confirmação manual necessária. O sistema de polling + webhook funcionou perfeitamente — sem nenhum pagamento "órfão".
+
+**O que me surpreendeu negativamente**: a diversidade de dispositivos no check-in. `html5-qrcode` tem comportamento inconsistente em certos modelos de Android mais antigos — a câmera não focava corretamente para leitura de QR Code. Adicionei na tela do check-in um campo alternativo para digitar o código manualmente, o que cobriu os casos problemáticos.
+
+**O que aprendi sobre usuários acadêmicos**: o PDF dos certificados foi baixado massivamente logo após o evento. A opção de cópia BibTeX foi usada muito mais do que eu esperava — o público-alvo realmente usa gerenciadores de referência. E ninguém reportou problema na verificação offline dos certificados, o que é o melhor tipo de feedback para um sistema que deve ser invisível.
+
+## Encerrando a série — o que ficaria de fora se fizesse de novo
+
+Construir o JoBoEco foi um exercício de priorização constante. Algumas features que ficaram de fora da v1 (mas que estão no backlog):
+
+- **Reembolsos automáticos**: hoje, reembolso é manual
+- **Notificações push**: hoje, apenas e-mail transacional via Resend
+- **App mobile**: hoje, o site é responsivo mas não tem app nativo para o check-in
+- **Multi-instância completa**: hoje, o sistema roda um evento por banco D1; a arquitetura suporta múltiplos eventos mas não múltiplas organizações independentes
+
+O JoBoEco é um projeto que nasceu de uma frustração real, foi construído para um contexto real, e está em uso em produção real. Não é o sistema mais sofisticado que existe, mas resolve o problema que prometeu resolver — e isso, no fim, é o que importa.
+
+O código está em produção em [joboeco.org](https://joboeco.org). Se você organiza eventos acadêmicos e quer conversar sobre o que aprendi, pode me encontrar no GitHub ou por e-mail.

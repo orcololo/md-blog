@@ -15,32 +15,27 @@ const navLinks = getNavLinks(lang)
   >
     <Link
       href={getLocalePath('/', lang)}
-      class="group flex shrink-0 items-center justify-center gap-2 font-mono"
+      class="group flex shrink-0 items-center justify-center gap-2"
     >
-      <span class="text-primary">&#x25B8;</span>
-      <span class="hidden text-sm font-medium min-[400px]:block"
+      <span
+        class="text-primary h-2 w-2 rounded-full transition-transform duration-200 group-hover:scale-125"
+        aria-hidden="true"></span>
+      <span class="hidden text-sm font-medium tracking-tight min-[400px]:block"
         >{SITE.title}</span
-      ><span class="animate-blink text-primary hidden min-[400px]:inline"
-        >_</span
       >
     </Link>
-    <div class="flex items-center gap-4">
-      <nav class="flex items-center gap-1 font-mono text-xs sm:text-sm">
-        <span class="text-muted-foreground hidden sm:inline">[</span>
+    <div class="flex items-center gap-3">
+      <nav class="flex items-center gap-1 text-sm">
         {
-          navLinks.map((item, i) => (
-            <>
-              {i > 0 && <span class="text-muted-foreground/40">|</span>}
-              <Link
-                href={item.href}
-                class="text-muted-foreground hover:text-primary px-1.5 py-0.5 transition-colors"
-              >
-                {item.label}
-              </Link>
-            </>
+          navLinks.map((item) => (
+            <Link
+              href={item.href}
+              class="text-muted-foreground hover:text-foreground hover:bg-muted rounded-[4px] px-3 py-1.5 transition-colors duration-150"
+            >
+              {item.label}
+            </Link>
           ))
         }
-        <span class="text-muted-foreground hidden sm:inline">]</span>
       </nav>
       <LanguageSwitcher />
       <ThemeToggle transition:persist />

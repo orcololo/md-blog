@@ -1,0 +1,214 @@
+---
+title: 'Construindo o JoBoEco, Parte 3: Pix na prática'
+description: 'Parte 3 de 5 — Como implementei pagamentos via Pix no JoBoEco com MercadoPago — do QR Code dinâmico até webhooks em produção, passando por todos os edge cases que só aparecem quando tem dinheiro envolvido.'
+date: 2026-04-21
+tags: ['joboeco', 'mercadopago', 'pix', 'pagamentos', 'webhooks', 'nextjs']
+authors: ['orcololo']
+published: true
+lang: pt
+series: 'Construindo o JoBoEco'
+seriesPart: 3
+---
+
+## Pagamentos são diferentes
+
+Existe uma diferença fundamental entre implementar um sistema de submissão de trabalhos e implementar um sistema de pagamentos. O primeiro, se bugar, você perde dado e o usuário fica frustrado. O segundo, se bugar, você perde dinheiro — do usuário, da organização, ou de ambos.
+
+Essa consciência muda como você pensa o design. Muito.
+
+No JoBoEco, pagamentos aparecem em dois contextos: **inscrição no evento** (taxa de participação) e **submissão de trabalhos** (taxa por submissão, dependendo da categoria do participante e da área escolhida). Ambos usam Pix como método, via MercadoPago.
+
+## Por que MercadoPago
+
+No Brasil, se você precisa de Pix como método de pagamento numa aplicação web com API, as opções reais são mais limitadas do que parecem.
+
+Stripe não tem suporte a Pix. O Gerencianet/Efí tem, mas exige CNPJ ativo e o processo de onboarding é burocrático. O PagSeguro tem API de Pix, mas a experiência de desenvolvedores é historicamente problemática.
+
+O MercadoPago tem API razoavelmente boa, documentação decente em PT-BR, e o onboarding funciona. A taxa de processamento para o volume do JoBoEco é aceitável. A escolha foi basicamente por eliminação.
+
+## QR Estático vs QR Dinâmico
+
+Antes de qualquer linha de código, precisei entender essa distinção — e ela é mais importante do que parece.
+
+O **QR Estático** vincula o Pix a uma chave (CPF, e-mail, telefone). Qualquer valor pode ser pago, o pagador define o valor, não há como rastrear automaticamente qual transação corresponde a qual inscrição. Inútil para um sistema automatizado.
+
+O **QR Dinâmico** gera uma cobrança específica com valor fixo, vencimento definido, e um identificador único. Você controla exatamente o que está sendo cobrado e consegue reconciliar o pagamento com a entidade no banco. É o único que faz sentido aqui.
+
+O MercadoPago expõe isso via `payment` com `payment_method_id: "pix"`. A resposta traz `point_of_interaction.transaction_data.qr_code_base64` (a imagem do QR para exibir) e `qr_code` (o payload texto para cópia-e-cola).
+
+```ts title="src/lib/mercadopago.ts"
+import { MercadoPagoConfig, Payment } from "mercadopago";
+
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
+});
+
+export async function createPixPayment({
+  amount,
+  description,
+  externalReference,
+  payerEmail,
+}: {
+  amount: number;
+  description: string;
+  externalReference: string;
+  payerEmail: string;
+}) {
+  const payment = new Payment(client);
+  return payment.create({
+    body: {
+      transaction_amount: amount,
+      description,
+      payment_method_id: "pix",
+      external_reference: externalReference,
+      payer: { email: payerEmail },
+    },
+  });
+}
+```
+
+Simples por fora. O campo `external_reference` é o detalhe que importa — volto nele logo.
+
+## O problema do external_reference
+
+Quando você tem dois tipos de pagamento distintos (inscrição e submissão), precisa de alguma forma de saber, ao receber um webhook, com qual entidade aquele pagamento corresponde. O MercadoPago te devolve o `external_reference` que você enviou — mas você precisa parsear isso no handler.
+
+A abordagem ingênua seria armazenar uma tabela de lookup: `payment_id → tipo + entidade_id`. Funciona, mas cria dependência de banco no hot path do webhook.
+
+A abordagem que adotei foi um **formato tipado por convenção no próprio `external_reference`**:
+
+```
+order:{userId}:INSCRICAO            → inscrição no evento
+submission:{userId}:{orderId}       → taxa de submissão de trabalho
+```
+
+No webhook e no polling, o primeiro passo é parsear esse formato:
+
+```ts
+function parseExternalReference(ref: string) {
+  const parts = ref.split(":");
+
+  if (parts[0] === "order") {
+    return { type: "INSCRICAO" as const, userId: parts[1] };
+  }
+
+  if (parts[0] === "submission") {
+    return {
+      type: "SUBMISSION" as const,
+      userId: parts[1],
+      orderId: parts[2],
+    };
+  }
+
+  throw new Error(`Unknown external_reference format: ${ref}`);
+}
+```
+
+Isso elimina o lookup. Você sabe o tipo e os IDs relevantes diretamente do campo que o MercadoPago te devolve, sem acessar o banco antes de decidir o que fazer.
+
+## Polling vs Webhooks — e por que uso os dois
+
+No mundo ideal, você implementa webhooks e pronto. O MercadoPago te avisa quando o pagamento é confirmado, você atualiza o banco, o usuário vê o status mudando.
+
+O mundo real tem dois problemas com essa abordagem:
+
+**Problema 1**: Webhooks podem não chegar. Network timeouts, seu servidor fora do ar por um segundo, uma race condition no handler, um bug silencioso. Se o webhook não é recebido, o pagamento fica preso em `PENDENTE` para sempre do ponto de vista do sistema. O usuário pagou, mas o sistema não sabe.
+
+**Problema 2**: O usuário está esperando na tela. Quando alguém faz o Pix e fica olhando para a tela, você precisa atualizar o status em quasi-tempo-real. Pedir para o usuário recarregar a página não é uma experiência aceitável.
+
+A solução foi combinar as duas abordagens:
+
+- **No frontend**: polling a cada 3 segundos num endpoint que verifica o status do pagamento diretamente no MercadoPago
+- **No backend**: webhook do MercadoPago atualiza o banco quando o evento chega, como garantia de durabilidade
+
+```ts title="src/app/api/payments/status/[paymentId]/route.ts"
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ paymentId: string }> },
+) {
+  const { paymentId } = await params;
+
+  // Busca o status atual diretamente do MercadoPago
+  const mpPayment = await getPaymentById(paymentId);
+
+  if (mpPayment.status === "approved") {
+    // Persiste no banco se ainda não estava aprovado
+    await syncPaymentStatus(paymentId, "PAGO");
+  }
+
+  return Response.json({ status: mpPayment.status });
+}
+```
+
+Se o usuário fechar a aba antes da confirmação, o webhook ainda vai atualizar o banco quando chegar. Se o webhook falhar por algum motivo, quando o usuário voltar, o polling vai encontrar o status atualizado no MercadoPago e sincronizar. Os dois caminhos se complementam.
+
+## O handler de webhook
+
+O webhook do MercadoPago envia um `POST` com o `id` do pagamento. Você então busca os detalhes pela API e processa.
+
+Uma coisa que a documentação não deixa suficientemente clara: **o MercadoPago pode enviar o mesmo evento múltiplas vezes** — retry automático em caso de timeout na sua resposta, ou simplesmente comportamento da platform. Seu handler precisa ser **idempotente**.
+
+```ts title="src/app/api/webhooks/mercadopago/route.ts"
+export async function POST(request: Request) {
+  const body = await request.json();
+
+  // MP envia diferentes tipos de notificação; só queremos payments
+  if (body.type !== "payment") {
+    return Response.json({ ok: true });
+  }
+
+  const paymentId = body.data?.id;
+  if (!paymentId) return Response.json({ ok: true });
+
+  const payment = await getPaymentById(String(paymentId));
+
+  if (payment.status !== "approved") {
+    return Response.json({ ok: true });
+  }
+
+  // Idempotência: verifica se esse pagamento já foi processado
+  const existing = await getOrderPaymentByMpId(String(paymentId));
+  if (existing?.status === "PAGO") {
+    return Response.json({ ok: true }); // já processado, responde 200 silenciosamente
+  }
+
+  const ref = parseExternalReference(payment.external_reference!);
+  await processApprovedPayment(ref, payment);
+
+  return Response.json({ ok: true });
+}
+```
+
+Note que o handler sempre retorna 200, mesmo em casos onde não há nada a fazer. Isso é deliberado: se você retornar um 4xx ou 5xx, o MercadoPago vai tentar de novo. Se o "erro" é algo que não vai se resolver com retry (como um `external_reference` em formato inválido), você quer logar o problema, mas não entrar em loop de retries.
+
+## O problema dos pagamentos esquecidos
+
+Existe um edge case que só percebi quando um usuário reclamou: ele criou o Pix, não pagou na hora, fechou a aba, e voltou horas depois para completar o pagamento. O QR ainda era válido (padrão de 24h), o pagamento foi confirmado via webhook — mas quando ele tentou acessar o sistema, não aparecia como inscrito.
+
+O problema: no banco havia dois registros para ele — o `orderPayment` original em `PENDENTE` (criado quando ele gerou o QR) e... nada mais. O webhook tinha chego, processado o pagamento, mas mapeou para um `userId` que não batia com a sessão atual por um bug de parsing.
+
+A correção foi simples, mas a lição foi importante: **teste o fluxo completo com o pagamento feito fora da janela principal**. O happy path (usuário paga imediatamente, webhook chega, tudo bate) funciona fácil. Os edge cases aparecem quando o usuário age de forma não-linear.
+
+Também adicionei uma verificação ao entrar no checkout: se já existe um `orderPayment` em `PENDENTE` para aquele usuário no evento atual, ao invés de criar um novo QR, o sistema exibe o original ainda ativo. Evita cobranças duplicadas e melhora a experiência de quem interrompeu o fluxo.
+
+## A lição principal
+
+**Trate pagamentos como uma máquina de estados, não como um fluxo linear.** Um `orderPayment` pode estar em `PENDENTE`, `PAGO`, `EXPIRADO`, ou `REEMBOLSADO`. Sempre persista o estado atual e os timestamps de transição. Quando algo der errado em produção — e vai dar — você vai querer o histórico completo para entender o que aconteceu.
+
+```sql
+-- A tabela que controla o ciclo de vida dos pagamentos
+orderPayments {
+  id, userId, eventId,
+  mpPaymentId,           -- ID no MercadoPago
+  externalReference,     -- "order:userId:INSCRICAO"
+  status,                -- PENDENTE | PAGO | EXPIRADO | REEMBOLSADO
+  amount,
+  pixQrCode,             -- payload para cópia e cola
+  pixQrCodeBase64,       -- imagem QR
+  createdAt, paidAt, expiresAt
+}
+```
+
+---
+
+Na próxima parte, entro no que foi o maior desafio de _design_ do projeto: o **motor de elegibilidade para submissões**. É onde as regras de negócio ficam complexas o suficiente para justificar uma camada de serviço dedicada — e onde eu aprendi que isolar lógica de negócio de verdade é mais difícil do que parece.

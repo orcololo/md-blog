@@ -1,0 +1,18 @@
+---
+import Link from '@/components/Link.astro'
+import { ANNOUNCEMENT } from '@/consts'
+---
+
+{
+  ANNOUNCEMENT && (
+    <div class="bg-foreground text-background flex items-center justify-center gap-2 px-4 py-2.5 text-center text-xs">
+      <span>{ANNOUNCEMENT.text}</span>
+      <Link
+        href={ANNOUNCEMENT.href}
+        class="text-primary shrink-0 underline-offset-2 hover:underline"
+      >
+        Read more &rarr;
+      </Link>
+    </div>
+  )
+}
