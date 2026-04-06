@@ -1,0 +1,70 @@
+---
+import BlogCard from '@/components/BlogCard.astro'
+import Link from '@/components/Link.astro'
+import PageHead from '@/components/PageHead.astro'
+import { buttonVariants } from '@/components/ui/button'
+import { SITE } from '@/consts'
+import { getLangFromUrl, getLocalePath, useTranslations } from '@/i18n/utils'
+import Layout from '@/layouts/Layout.astro'
+import { getRecentPosts } from '@/lib/data-utils'
+
+const lang = getLangFromUrl(Astro.url)
+const t = useTranslations(lang)
+const blog = await getRecentPosts(SITE.featuredPostCount, lang)
+---
+
+<Layout class="max-w-3xl">
+  <PageHead slot="head" title="Home" />
+  <section class="flex flex-col gap-y-6">
+    <div
+      class="animate-fade-in-up bg-card overflow-hidden rounded-[8px] border"
+    >
+      <div class="bg-primary h-1 w-full"></div>
+      <div class="p-6 sm:p-8">
+        <p
+          class="text-muted-foreground mb-3 text-xs font-medium tracking-widest uppercase"
+        >
+          {SITE.author}
+        </p>
+        <h1
+          class="text-foreground mb-4 text-3xl leading-none font-normal tracking-[-0.04em] sm:text-4xl"
+        >
+          {SITE.description}
+        </h1>
+        <p class="text-muted-foreground max-w-xl text-sm leading-relaxed">
+          {t('home.bio')}
+        </p>
+      </div>
+    </div>
+
+    <h2
+      class="animate-fade-in-up text-muted-foreground text-xs font-medium tracking-widest uppercase"
+      style="animation-delay: 100ms"
+    >
+      {t('home.latestPosts')}
+    </h2>
+    <ul class="flex flex-col gap-y-4">
+      {
+        blog.map((post, i) => (
+          <li
+            class="animate-fade-in-up"
+            style={`animation-delay: ${(i + 2) * 100}ms`}
+          >
+            <BlogCard entry={post} />
+          </li>
+        ))
+      }
+    </ul>
+    <div
+      class="animate-fade-in-up flex flex-wrap items-center gap-4"
+      style={`animation-delay: ${(blog.length + 2) * 100}ms`}
+    >
+      <Link
+        href={getLocalePath('/blog', lang)}
+        class={buttonVariants({ variant: 'default' })}
+      >
+        {t('home.viewAll')}
+      </Link>
+    </div>
+  </section>
+</Layout>
