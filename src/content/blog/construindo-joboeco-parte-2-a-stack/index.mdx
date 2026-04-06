@@ -1,8 +1,17 @@
 ---
 title: 'Construindo o JoBoEco, Parte 2: apostando tudo na Cloudflare'
 description: 'Parte 2 de 5 — Por que escolhi Next.js no Cloudflare Workers com D1 e R2 em vez do caminho óbvio Vercel + PostgreSQL. Os tradeoffs reais, o que funcionou, e o que eu mudaria hoje.'
-date: 2026-04-14
-tags: ['joboeco', 'cloudflare', 'nextjs', 'drizzle-orm', 'cloudflare-d1', 'opennext', 'stack']
+date: 2026-02-03
+tags:
+  [
+    'joboeco',
+    'cloudflare',
+    'nextjs',
+    'drizzle-orm',
+    'cloudflare-d1',
+    'opennext',
+    'stack',
+  ]
 authors: ['orcololo']
 published: true
 lang: pt
@@ -83,29 +92,29 @@ A decisão valeu. O App Router hoje está estável, e a integração com o OpenN
 É impossível falar de Next.js em Cloudflare sem falar do OpenNext. Ele transforma o output do `next build` em um Worker bundle que o Wrangler consegue fazer o deploy. A configuração ficou bem enxuta:
 
 ```ts title="open-next.config.ts"
-import type { OpenNextConfig } from "@opennextjs/cloudflare";
+import type { OpenNextConfig } from '@opennextjs/cloudflare'
 
 const config: OpenNextConfig = {
   default: {
     override: {
-      wrapper: "cloudflare-node",
-      converter: "edge",
+      wrapper: 'cloudflare-node',
+      converter: 'edge',
       incrementalCache: async () => {
         const { KVIncrementalCache } = await import(
-          "@opennextjs/cloudflare/kv-cache"
-        );
-        return new KVIncrementalCache();
+          '@opennextjs/cloudflare/kv-cache'
+        )
+        return new KVIncrementalCache()
       },
-      queue: "dummy",
-      tagCache: "dummy",
+      queue: 'dummy',
+      tagCache: 'dummy',
     },
   },
   middleware: {
     external: true,
   },
-};
+}
 
-export default config;
+export default config
 ```
 
 O detalhe importante: `middleware: { external: true }`. Isso faz o middleware do Next.js rodar como um Worker separado, melhorando a latência para rotas protegidas — que no JoBoEco são a maioria.
@@ -120,17 +129,17 @@ Se eu começasse hoje, avaliaria mais seriamente o **Auth.js v5** (a versão nov
 
 ## O resumo da stack
 
-| Camada         | Tecnologia               | Motivação principal                     |
-| -------------- | ------------------------ | --------------------------------------- |
-| Framework      | Next.js 16 (App Router)  | Ecosystem + suporte OpenNext            |
-| Runtime        | Cloudflare Workers       | Custo, latência edge                    |
-| Banco          | Cloudflare D1            | Custo, integração nativa com Workers    |
-| Storage        | Cloudflare R2            | Sem custo de egress                     |
-| ORM            | Drizzle ORM              | Suporte D1, SQL transparente            |
-| Auth           | NextAuth.js v4           | Disponível, funciona                    |
-| Deploy         | OpenNext + Wrangler      | Único caminho viável para CF Workers    |
-| Email          | Resend                   | API limpa, boa DX                       |
-| Pagamentos     | MercadoPago              | Único com boa API de Pix no Brasil      |
+| Camada     | Tecnologia              | Motivação principal                  |
+| ---------- | ----------------------- | ------------------------------------ |
+| Framework  | Next.js 16 (App Router) | Ecosystem + suporte OpenNext         |
+| Runtime    | Cloudflare Workers      | Custo, latência edge                 |
+| Banco      | Cloudflare D1           | Custo, integração nativa com Workers |
+| Storage    | Cloudflare R2           | Sem custo de egress                  |
+| ORM        | Drizzle ORM             | Suporte D1, SQL transparente         |
+| Auth       | NextAuth.js v4          | Disponível, funciona                 |
+| Deploy     | OpenNext + Wrangler     | Único caminho viável para CF Workers |
+| Email      | Resend                  | API limpa, boa DX                    |
+| Pagamentos | MercadoPago             | Único com boa API de Pix no Brasil   |
 
 ## O que eu mudaria
 

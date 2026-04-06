@@ -1,7 +1,7 @@
 ---
 title: 'Construindo o JoBoEco, Parte 1: o problema que justificou tudo'
 description: 'Parte 1 de 5 — Como a frustração com planilhas, Google Forms, taxas de plataforma e processos espalhados por N ferramentas me levou a construir uma plataforma completa de gestão de eventos acadêmicos.'
-date: 2026-04-07
+date: 2026-01-06
 tags: ['joboeco', 'saas', 'eventos-academicos', 'backstory']
 authors: ['orcololo']
 published: true
@@ -60,17 +60,17 @@ No JoBoEco, o Pix é processado via API do MercadoPago com confirmação automá
 
 Outro padrão que vi repetido em múltiplos eventos: cada funcionalidade do ciclo de vida do congresso vivia numa plataforma diferente, sem integração entre elas.
 
-| Etapa | Plataforma ||
-|---|---|---|
-| Site do evento e programação | Google Sites ou WordPress |
-| Inscrições | Google Forms + planilha |
-| Pagamentos | Pix manual para chave aleatória |
-| Submissão de trabalhos | Google Forms separado |
-| Avaliação dos resumos | E-mail ou planilha compartilhada |
-| Comunicação com participantes | E-mail manual em lote |
-| Check-in presencial | Lista impressa ou planilha aberta no notebook |
-| Certificados | Canva + envio individual por e-mail |
-| Publicação dos anais | PDF enviado para repositório institucional |
+| Etapa                         | Plataforma                                    |     |
+| ----------------------------- | --------------------------------------------- | --- |
+| Site do evento e programação  | Google Sites ou WordPress                     |
+| Inscrições                    | Google Forms + planilha                       |
+| Pagamentos                    | Pix manual para chave aleatória               |
+| Submissão de trabalhos        | Google Forms separado                         |
+| Avaliação dos resumos         | E-mail ou planilha compartilhada              |
+| Comunicação com participantes | E-mail manual em lote                         |
+| Check-in presencial           | Lista impressa ou planilha aberta no notebook |
+| Certificados                  | Canva + envio individual por e-mail           |
+| Publicação dos anais          | PDF enviado para repositório institucional    |
 
 Nove etapas, nove sistemas que não se falam. Dados de inscrição copiados manualmente do Forms para a planilha de controle. Status de pagamento anotado à mão na planilha. Lista de inscritos exportada do Sheets para fazer o check-in. Resumos aprovados copiados do e-mail do avaliador para o form de resultado.
 

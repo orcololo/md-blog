@@ -1,7 +1,7 @@
 ---
 title: 'Construindo o JoBoEco, Parte 3: Pix na prática'
 description: 'Parte 3 de 5 — Como implementei pagamentos via Pix no JoBoEco com MercadoPago — do QR Code dinâmico até webhooks em produção, passando por todos os edge cases que só aparecem quando tem dinheiro envolvido.'
-date: 2026-04-21
+date: 2026-03-03
 tags: ['joboeco', 'mercadopago', 'pix', 'pagamentos', 'webhooks', 'nextjs']
 authors: ['orcololo']
 published: true
@@ -37,11 +37,11 @@ O **QR Dinâmico** gera uma cobrança específica com valor fixo, vencimento def
 O MercadoPago expõe isso via `payment` com `payment_method_id: "pix"`. A resposta traz `point_of_interaction.transaction_data.qr_code_base64` (a imagem do QR para exibir) e `qr_code` (o payload texto para cópia-e-cola).
 
 ```ts title="src/lib/mercadopago.ts"
-import { MercadoPagoConfig, Payment } from "mercadopago";
+import { MercadoPagoConfig, Payment } from 'mercadopago'
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
-});
+})
 
 export async function createPixPayment({
   amount,
@@ -49,21 +49,21 @@ export async function createPixPayment({
   externalReference,
   payerEmail,
 }: {
-  amount: number;
-  description: string;
-  externalReference: string;
-  payerEmail: string;
+  amount: number
+  description: string
+  externalReference: string
+  payerEmail: string
 }) {
-  const payment = new Payment(client);
+  const payment = new Payment(client)
   return payment.create({
     body: {
       transaction_amount: amount,
       description,
-      payment_method_id: "pix",
+      payment_method_id: 'pix',
       external_reference: externalReference,
       payer: { email: payerEmail },
     },
-  });
+  })
 }
 ```
 
@@ -86,21 +86,21 @@ No webhook e no polling, o primeiro passo é parsear esse formato:
 
 ```ts
 function parseExternalReference(ref: string) {
-  const parts = ref.split(":");
+  const parts = ref.split(':')
 
-  if (parts[0] === "order") {
-    return { type: "INSCRICAO" as const, userId: parts[1] };
+  if (parts[0] === 'order') {
+    return { type: 'INSCRICAO' as const, userId: parts[1] }
   }
 
-  if (parts[0] === "submission") {
+  if (parts[0] === 'submission') {
     return {
-      type: "SUBMISSION" as const,
+      type: 'SUBMISSION' as const,
       userId: parts[1],
       orderId: parts[2],
-    };
+    }
   }
 
-  throw new Error(`Unknown external_reference format: ${ref}`);
+  throw new Error(`Unknown external_reference format: ${ref}`)
 }
 ```
 
@@ -126,17 +126,17 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ paymentId: string }> },
 ) {
-  const { paymentId } = await params;
+  const { paymentId } = await params
 
   // Busca o status atual diretamente do MercadoPago
-  const mpPayment = await getPaymentById(paymentId);
+  const mpPayment = await getPaymentById(paymentId)
 
-  if (mpPayment.status === "approved") {
+  if (mpPayment.status === 'approved') {
     // Persiste no banco se ainda não estava aprovado
-    await syncPaymentStatus(paymentId, "PAGO");
+    await syncPaymentStatus(paymentId, 'PAGO')
   }
 
-  return Response.json({ status: mpPayment.status });
+  return Response.json({ status: mpPayment.status })
 }
 ```
 
@@ -150,32 +150,32 @@ Uma coisa que a documentação não deixa suficientemente clara: **o MercadoPago
 
 ```ts title="src/app/api/webhooks/mercadopago/route.ts"
 export async function POST(request: Request) {
-  const body = await request.json();
+  const body = await request.json()
 
   // MP envia diferentes tipos de notificação; só queremos payments
-  if (body.type !== "payment") {
-    return Response.json({ ok: true });
+  if (body.type !== 'payment') {
+    return Response.json({ ok: true })
   }
 
-  const paymentId = body.data?.id;
-  if (!paymentId) return Response.json({ ok: true });
+  const paymentId = body.data?.id
+  if (!paymentId) return Response.json({ ok: true })
 
-  const payment = await getPaymentById(String(paymentId));
+  const payment = await getPaymentById(String(paymentId))
 
-  if (payment.status !== "approved") {
-    return Response.json({ ok: true });
+  if (payment.status !== 'approved') {
+    return Response.json({ ok: true })
   }
 
   // Idempotência: verifica se esse pagamento já foi processado
-  const existing = await getOrderPaymentByMpId(String(paymentId));
-  if (existing?.status === "PAGO") {
-    return Response.json({ ok: true }); // já processado, responde 200 silenciosamente
+  const existing = await getOrderPaymentByMpId(String(paymentId))
+  if (existing?.status === 'PAGO') {
+    return Response.json({ ok: true }) // já processado, responde 200 silenciosamente
   }
 
-  const ref = parseExternalReference(payment.external_reference!);
-  await processApprovedPayment(ref, payment);
+  const ref = parseExternalReference(payment.external_reference!)
+  await processApprovedPayment(ref, payment)
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true })
 }
 ```
 

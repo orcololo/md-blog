@@ -1,8 +1,15 @@
 ---
 title: 'Construindo o JoBoEco, Parte 4: o motor de elegibilidade'
 description: 'Parte 4 de 5 — A parte mais complexa do JoBoEco não foi o pagamento nem o deploy — foi modelar as regras de elegibilidade para submissão de trabalhos. Aqui estão as decisões de design e por que isolar lógica de negócio de verdade é mais difícil do que parece.'
-date: 2026-04-28
-tags: ['joboeco', 'domain-design', 'typescript', 'revisao-por-pares', 'clean-architecture']
+date: 2026-03-24
+tags:
+  [
+    'joboeco',
+    'domain-design',
+    'typescript',
+    'revisao-por-pares',
+    'clean-architecture',
+  ]
 authors: ['orcololo']
 published: true
 lang: pt
@@ -42,24 +49,24 @@ O contrato ficou assim:
 
 ```ts title="src/lib/eligibility.ts"
 export type EligibilityStatus =
-  | "ELIGIBLE"
-  | "NOT_ENROLLED"
-  | "ENROLLMENT_PROOF_PENDING"
-  | "ENROLLMENT_PROOF_REJECTED"
-  | "FREE_QUOTA_EXHAUSTED_NO_PAID_OPTION"
-  | "NEEDS_SUBMISSION_PAYMENT"
-  | "SUBMISSIONS_CLOSED"
-  | "GLOBAL_LIMIT_REACHED"
-  | "CATEGORY_NOT_ALLOWED";
+  | 'ELIGIBLE'
+  | 'NOT_ENROLLED'
+  | 'ENROLLMENT_PROOF_PENDING'
+  | 'ENROLLMENT_PROOF_REJECTED'
+  | 'FREE_QUOTA_EXHAUSTED_NO_PAID_OPTION'
+  | 'NEEDS_SUBMISSION_PAYMENT'
+  | 'SUBMISSIONS_CLOSED'
+  | 'GLOBAL_LIMIT_REACHED'
+  | 'CATEGORY_NOT_ALLOWED'
 
 export interface EligibilityContext {
-  status: EligibilityStatus;
-  eligible: boolean;
+  status: EligibilityStatus
+  eligible: boolean
   // contexto adicional para o frontend renderizar a mensagem certa
-  freeSubmissionsUsed?: number;
-  freeSubmissionsTotal?: number;
-  submissionFee?: number;
-  pendingPaymentId?: string;
+  freeSubmissionsUsed?: number
+  freeSubmissionsTotal?: number
+  submissionFee?: number
+  pendingPaymentId?: string
 }
 
 export function checkSubmissionEligibility(
@@ -102,13 +109,13 @@ O JoBoEco suporta três modos de revisão:
 Essa configuração fica em `siteSettings.reviewMode` e é aplicada no nível da API — não no frontend. Isso é importante: nunca confiar no cliente para censurar dados sensíveis.
 
 ```ts title="src/app/api/admin/submissions/[id]/route.ts"
-const reviewMode = await getSiteConfig("reviewMode");
+const reviewMode = await getSiteConfig('reviewMode')
 
 // Se double blind, remove dados do autor antes de retornar para o avaliador
-if (reviewMode === "DOUBLE_BLIND" && userIsReviewer) {
-  submission.authorName = null;
-  submission.authorEmail = null;
-  submission.authorInstitution = null;
+if (reviewMode === 'DOUBLE_BLIND' && userIsReviewer) {
+  submission.authorName = null
+  submission.authorEmail = null
+  submission.authorInstitution = null
 }
 ```
 
@@ -154,10 +161,10 @@ Isso é implementado como um `siteSettings` no banco D1, com chave-valor:
 
 ```ts
 // Leitura
-const value = await getSiteConfig("reviewMode");
+const value = await getSiteConfig('reviewMode')
 
 // Atualização pelo admin
-await setSiteConfig("reviewMode", "DOUBLE_BLIND");
+await setSiteConfig('reviewMode', 'DOUBLE_BLIND')
 ```
 
 O benefício prático: durante o evento, a organização pode mudar o modo de revisão, fechar submissões ou atualizar os signatários dos certificados **sem precisar me chamar para fazer um deploy**. Para um sistema usado em contextos acadêmicos formais, essa autonomia é importante.
@@ -184,8 +191,8 @@ Esse foi o módulo com mais testes unitários do projeto. Não por dogma, mas po
 O padrão de teste ficou assim:
 
 ```ts title="src/__tests__/eligibility.test.ts"
-describe("checkSubmissionEligibility", () => {
-  it("retorna ELIGIBLE quando todas as condições são atendidas", () => {
+describe('checkSubmissionEligibility', () => {
+  it('retorna ELIGIBLE quando todas as condições são atendidas', () => {
     const result = checkSubmissionEligibility({
       submissionsOpen: true,
       isEnrolled: true,
@@ -195,25 +202,25 @@ describe("checkSubmissionEligibility", () => {
       freeQuotaUsed: 0,
       freeQuotaTotal: 2,
       globalLimitReached: false,
-    });
+    })
 
-    expect(result.eligible).toBe(true);
-    expect(result.status).toBe("ELIGIBLE");
-  });
+    expect(result.eligible).toBe(true)
+    expect(result.status).toBe('ELIGIBLE')
+  })
 
-  it("retorna ENROLLMENT_PROOF_PENDING quando prova pendente bloqueia", () => {
+  it('retorna ENROLLMENT_PROOF_PENDING quando prova pendente bloqueia', () => {
     const result = checkSubmissionEligibility({
       // ...
       enrollmentProofRequired: true,
-      enrollmentProofStatus: "PENDING",
-    });
+      enrollmentProofStatus: 'PENDING',
+    })
 
-    expect(result.eligible).toBe(false);
-    expect(result.status).toBe("ENROLLMENT_PROOF_PENDING");
-  });
+    expect(result.eligible).toBe(false)
+    expect(result.status).toBe('ENROLLMENT_PROOF_PENDING')
+  })
 
   // ... um teste por caminho bloqueável
-});
+})
 ```
 
 Cada estado de bloqueio tem seu próprio teste. Qualquer refatoração nas regras quebra os testes antes de quebrar a produção.

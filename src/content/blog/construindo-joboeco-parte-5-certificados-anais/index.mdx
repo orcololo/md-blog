@@ -1,7 +1,7 @@
 ---
 title: 'Construindo o JoBoEco, Parte 5: certificados, anais e o primeiro evento real'
 description: 'Parte 5 de 5 — Como funciona a verificação de certificados sem banco de dados usando HMAC-SHA256, os anais com exportação BibTeX, o check-in via QR Code, e o que aprendi no primeiro evento real usando a plataforma.'
-date: 2026-05-05
+date: 2026-04-06
 tags: ['joboeco', 'hmac', 'certificados', 'jspdf', 'bibtex', 'anais', 'qrcode']
 authors: ['orcololo']
 published: true
@@ -31,14 +31,14 @@ A abordagem que adotei foi outra: **HMAC-SHA256 com verificação sem banco**.
 HMAC (Hash-based Message Authentication Code) é um mecanismo de autenticação de mensagens usando uma função hash e uma chave secreta. A ideia é simples: dado um `enrollmentId` e uma `CERT_SECRET` (variável de ambiente no servidor), o HMAC é determinístico — sempre produz o mesmo código para a mesma combinação.
 
 ```ts title="src/lib/certificate.ts"
-import { createHmac } from "crypto";
+import { createHmac } from 'crypto'
 
 export function generateCertificateCode(enrollmentId: string): string {
-  return createHmac("sha256", process.env.CERT_SECRET!)
+  return createHmac('sha256', process.env.CERT_SECRET!)
     .update(enrollmentId)
-    .digest("hex")
+    .digest('hex')
     .substring(0, 16) // 16 chars: legível e suficientemente único
-    .toUpperCase();
+    .toUpperCase()
 }
 ```
 
@@ -72,7 +72,7 @@ Por que no cliente?
 3. **Não há dados sensíveis trafegando** — o certificado é montado com dados que o frontend já tem
 
 ```ts title="src/lib/certificate.ts"
-import jsPDF from "jspdf";
+import jsPDF from 'jspdf'
 
 export function generateCertificatePDF({
   participantName,
@@ -83,18 +83,18 @@ export function generateCertificatePDF({
   certCode,
   enrollmentId,
 }: CertificateData): Blob {
-  const doc = new jsPDF({ orientation: "landscape", format: "a4" });
+  const doc = new jsPDF({ orientation: 'landscape', format: 'a4' })
 
   // Layout, fontes, textos, logo do evento...
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
-  doc.text(participantName, 148.5, 100, { align: "center" });
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(24)
+  doc.text(participantName, 148.5, 100, { align: 'center' })
 
   // QR Code com URL de verificação
-  const verificationUrl = `https://joboeco.org/certificado/verificar?code=${certCode}&enrollment=${enrollmentId}`;
+  const verificationUrl = `https://joboeco.org/certificado/verificar?code=${certCode}&enrollment=${enrollmentId}`
   // adiciona QR via qrcode.react convertido para data URL
 
-  return doc.output("blob");
+  return doc.output('blob')
 }
 ```
 
@@ -112,16 +112,16 @@ O check-in presencial usa `html5-qrcode` para leitura de QR Code pela câmera do
 4. Feedback imediato na tela: ✓ confirmado ou ✗ não encontrado/já registrado
 
 ```ts title="src/app/organizador/checkin/page.tsx"
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5QrcodeScanner } from 'html5-qrcode'
 
 // QR Code contém o enrollmentId
 function onScanSuccess(enrollmentId: string) {
   fetch(`/api/checkin`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify({ enrollmentId }),
   })
     .then((res) => res.json())
-    .then((data) => setCheckinResult(data));
+    .then((data) => setCheckinResult(data))
 }
 ```
 
@@ -149,9 +149,7 @@ O BibTeX foi a feature que eu mais gostei de implementar. O formato é familiar 
 
 ```ts title="src/lib/bibtex.ts"
 export function generateBibTeX(submission: SubmissionForBib): string {
-  const key = `${submission.authorLastName.toLowerCase()}${submission.year}${
-    submission.titleWords[0].toLowerCase()
-  }`;
+  const key = `${submission.authorLastName.toLowerCase()}${submission.year}${submission.titleWords[0].toLowerCase()}`
 
   return `@inproceedings{${key},
   author    = {${submission.authorName}},
@@ -159,9 +157,9 @@ export function generateBibTeX(submission: SubmissionForBib): string {
   booktitle = {Anais da ${submission.eventName}},
   year      = {${submission.year}},
   address   = {${submission.eventCity}},
-  pages     = {${submission.pages ?? ""}},
+  pages     = {${submission.pages ?? ''}},
   note      = {${submission.area}}
-}`;
+}`
 }
 ```
 
