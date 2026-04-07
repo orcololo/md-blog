@@ -16,27 +16,6 @@ const blog = await getRecentPosts(SITE.featuredPostCount, lang)
 <Layout class="max-w-3xl">
   <PageHead slot="head" title="Home" />
   <section class="flex flex-col gap-y-6">
-    <div
-      class="animate-fade-in-up bg-card overflow-hidden rounded-[8px] border"
-    >
-      <div class="bg-primary h-1 w-full"></div>
-      <div class="p-6 sm:p-8">
-        <p
-          class="text-muted-foreground mb-3 text-xs font-medium tracking-widest uppercase"
-        >
-          {SITE.author}
-        </p>
-        <h1
-          class="text-foreground mb-4 text-3xl leading-none font-normal tracking-[-0.04em] sm:text-4xl"
-        >
-          {SITE.description}
-        </h1>
-        <p class="text-muted-foreground max-w-xl text-sm leading-relaxed">
-          {t('home.bio')}
-        </p>
-      </div>
-    </div>
-
     <h2
       class="animate-fade-in-up text-muted-foreground text-xs font-medium tracking-widest uppercase"
       style="animation-delay: 100ms"

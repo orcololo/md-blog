@@ -1,51 +1,26 @@
-![Showcase Card](/public/static/twitter-card.png)
-
 <div align="center">
 
-## astro-erudite
+## orcololo's blog
 
-![Stargazers]
 [![License]](LICENSE)
 
 </div>
 
-astro-erudite is an opinionated, unstyled static blogging template built with [Astro](https://astro.build/), [Tailwind](https://tailwindcss.com/), and [shadcn/ui](https://ui.shadcn.com/). Extraordinarily loosely based off the [Astro Micro](https://astro-micro.vercel.app/) theme by [trevortylerlee](https://github.com/trevortylerlee).
-
-| ![Preview 1](/public/static/preview-1.png) | ![Preview 2](/public/static/preview-2.png) |
-| ------------------------------------------ | ------------------------------------------ |
-| ![Preview 3](/public/static/preview-3.png) | ![Preview 4](/public/static/preview-4.png) |
-
-> [!NOTE]
-> To learn more about why this template exists, read [The State of Static Blogs in 2024](https://astro-erudite.vercel.app/blog/the-state-of-static-blogs), where I share my take on what constitutes a great blogging template and my goals while developing this one.
+Personal blog at [blog.orcololo.com](https://blog.orcololo.com), built with [Astro](https://astro.build/), [Tailwind](https://tailwindcss.com/), and [shadcn/ui](https://ui.shadcn.com/). Based on the [astro-erudite](https://github.com/jktrn/astro-erudite) template by [jktrn](https://github.com/jktrn).
 
 ---
 
-## Community examples
+## Customizations
 
-Below are some fantastic examples of websites based on this template. If you wish to add your site to this list, open a [pull request](https://github.com/jktrn/astro-erudite/pulls)!
+The following features were added on top of the upstream template:
 
-| Site | Author | Tags | Source |
-|-|-|-|-|
-| [enscribe.dev](https://enscribe.dev) | [@jktrn](https://github.com/jktrn) | portfolio, interactive | [→](https://github.com/jktrn/enscribe.dev) |
-| [emile.sh](https://emile.sh) | [@echoghi](https://github.com/echoghi) | minimal, flexoki | [→](https://github.com/echoghi/v5) |
-| [decentparadox.me](https://decentparadox.me) | [@decentparadox](https://github.com/decentparadox) | portfolio, sci-fi | [→](https://github.com/decentparadox/decentparadox.me) |
-| [flocto.github.io](https://flocto.github.io/) | [@flocto](https://github.com/flocto) | blog | [→](https://github.com/flocto/flocto.github.io) |
-| [dumbprism.me](https://www.dumbprism.me/) | [@dumbprism](https://github.com/dumbprism) | portfolio, bento | [→](https://github.com/dumbprism/dumbprism-portfolio) |
-| [hyuki.dev](https://hyuki.dev/) | [@snow0406](https://github.com/snow0406) | minimal, blog | [→](https://github.com/Snow0406/hyuki.dev) |
-| [ldd.cc](https://ldd.cc/) | [@xJoyLu](https://github.com/xjoylu) | blog | [→](https://ldd.cc/) |
-| [rezarezvan.com](https://rezarezvan.com/) | [@rezaarezvan](https://github.com/rezaarezvan) | academic, blog | [→](https://rezarezvan.com/) |
-| [blog.z0x.ca](https://blog.z0x.ca/) | [@z0x](https://z0x.ca) | minimal | [→](https://git.z0x.ca/z0x/blog.z0x.ca/) |
-| [angelaytchan.net](https://angelaytchan.net/) | [@wispyplant](https://github.com/wispyplant) | portfolio, art | [→](https://github.com/wispyplant/wispyplant.github.io) |
-| [kaezr.xyz](https://kaezr.xyz/) | [@kaezrr](https://github.com/kaezrr) | minimal, portfolio | [→](https://github.com/kaezrr/webfolio) |
-| [worldwidewong](https://worldwidewong.vercel.app) | [@brendanwong-web](https://github.com/brendanwong-web) | portfolio, gallery | [→](https://github.com/brendanwong-web/worldwidewong) |
-| [bgajjala.dev](https://bgajjala.dev) | [@bgajjala8](https://github.com/bgajjala8) | minimal, blog | [→](https://github.com/bgajjala8/bgajjala.dev) |
-| [ankitz007.vercel.app](https://ankitz007.vercel.app) | [@ankitz007](https://github.com/ankitz007) | blog | [→](https://github.com/ankitz007/webfolio) |
-| [sadman.ca](https://sadman.ca) | [@sadmanca](https://github.com/sadmanca) | blog, media | [→](https://github.com/sadmanca/blogv3) |
-| [marcel-to.vercel.app](https://marcel-to.vercel.app) | [@Marcel-TO](https://github.com/Marcel-TO) | portfolio, docs | [→](https://github.com/Marcel-TO/marcel-to-website) |
-| [merox.dev](https://merox.dev) | [@meroxdotdev](https://github.com/meroxdotdev) | blog, devops, homelab | [→](https://github.com/meroxdotdev/merox) |
-| [Off by One](https://justoffbyone.com) | [@cduruk](https://github.com/cduruk) | engineering, blog | [→](https://github.com/cduruk/offbyone) |
-| [holywater.dev](https://holywater.dev) | [@holywater2372](https://github.com/holywater2372) | cybersecurity, blog | [→](https://github.com/holywater2372/holywater.dev) |
-| [theinfinull.com](https://theinfinull.com) | [@theinfinull](https://github.com/theinfinull) | dev, portfolio, blog | [→](https://github.com/theinfinull/portfolio) |
+- **Bilingual i18n (EN/PT)** — Full English and Portuguese support via Astro's built-in i18n routing. Includes a `LanguageSwitcher` component in the header, locale-specific route mirrors under `/pt/`, per-locale RSS feeds, and a `src/i18n/` module with typed translation keys and helper utilities.
+- **Blog series** — Posts can be grouped into named series with sequential ordering using the `series` and `seriesPart` frontmatter fields.
+- **`published` field** — Explicit opt-in publishing flag (defaults to `false`). Replaces implicit `draft` as the primary visibility control.
+- **Security headers** — `X-Frame-Options`, `X-Content-Type-Options`, and `Referrer-Policy` headers applied to every response via `src/middleware.ts`, also mirrored in `public/_headers`.
+
+---
+
 ## Features
 
 - [Astro](https://astro.build/)'s [Islands](https://docs.astro.build/en/concepts/islands/) architecture for selective hydration and client-side interactivity while maintaining fast static site rendering.
@@ -54,11 +29,13 @@ Below are some fantastic examples of websites based on this template. If you wis
 - Blog authoring with [MDX](https://mdxjs.com/) for component-rich content and $\LaTeX$ math rendering via [KaTeX](https://katex.org/).
 - Astro [View Transitions](https://docs.astro.build/en/guides/view-transitions/) in <abbr title="Single Page Application">SPA</abbr> mode for smooth route animations.
 - SEO optimization with granular metadata and [Open Graph](https://ogp.me/) tag control for each post.
-- [RSS](https://en.wikipedia.org/wiki/RSS) feed and sitemap generation.
+- [RSS](https://en.wikipedia.org/wiki/RSS) feed and sitemap generation (one feed per locale).
 - Subpost support for breaking long content into digestible parts and organizing related series.
 - Author profiles with a dedicated authors page and multi-author post support.
 - Project tags with a dedicated tags page for post categorization and discovery.
 - Custom Callout component variants for enhanced technical writing.
+- Bilingual content (EN + PT) with Astro i18n routing, per-locale pages, and a `LanguageSwitcher` header component.
+- Blog series grouping via `series` and `seriesPart` frontmatter fields.
 
 ### Technology stack
 
@@ -76,28 +53,26 @@ This is a list of the various technologies used to build this template:
 
 ## Getting started
 
-1. Hit &ldquo;Use this template&rdquo;, the big green button on the top right, to create a new repository in your own GitHub account with this template.
-
-2. Clone the repository:
+1. Clone the repository:
 
    ```bash
-   git clone https://github.com/[YOUR_USERNAME]/[YOUR_REPO_NAME].git
-   cd [YOUR_REPO_NAME]
+   git clone https://github.com/orcololo/blog.git
+   cd blog
    ```
 
-3. Install dependencies:
+2. Install dependencies:
 
    ```bash
    npm install
    ```
 
-4. Start the development server:
+3. Start the development server:
 
    ```bash
    npm run dev
    ```
 
-5. Open your browser and visit `http://localhost:1234` to get started. The following commands are also available:
+4. Open your browser and visit `http://localhost:3000` to get started. The following commands are also available:
 
    | Command            | Description                                                     |
    | ------------------ | --------------------------------------------------------------- |
@@ -113,27 +88,38 @@ Edit the `src/consts.ts` file to update your site's metadata, navigation links, 
 
 ```ts
 export const SITE: Site = {
-  title: 'astro-erudite',
-  description: // ...
-  href: 'https://astro-erudite.vercel.app',
-  featuredPostCount: 2,
-  postsPerPage: 3,
+  title: 'Orcololo',
+  description:
+    'Just a blog about programming, technology, and other things that interest me.',
+  href: 'https://blog.orcololo.com',
+  author: 'orcololo',
+  locale: 'en-US',
+  featuredPostCount: 5,
+  postsPerPage: 5,
 }
 
-export const NAV_LINKS: SocialLink[] = [
-  {
-    href: '/blog',
-    label: 'blog',
-  },
-  // ...
+// English navigation
+export const NAV_LINKS: NavLink[] = [
+  { href: '/blog', label: 'blog' },
+  { href: '/about', label: 'about' },
 ]
 
+// Portuguese navigation
+export const NAV_LINKS_PT: NavLink[] = [
+  { href: '/pt/blog', label: 'blog' },
+  { href: '/pt/about', label: 'sobre' },
+]
+
+// Returns the correct nav set for a given language
+export function getNavLinks(lang: 'en' | 'pt'): NavLink[] {
+  /* ... */
+}
+
 export const SOCIAL_LINKS: SocialLink[] = [
-  {
-    href: 'https://github.com/jktrn',
-    label: 'GitHub',
-  },
-  // ...
+  { href: 'https://github.com/orcololo', label: 'GitHub' },
+  { href: 'mailto:rhi.castro@gmail.com', label: 'Email' },
+  { href: 'https://linkedin.com/in/rhian-castro', label: 'LinkedIn' },
+  { href: '/rss.xml', label: 'RSS' },
 ]
 ```
 
@@ -191,7 +177,10 @@ date: 2024-01-01
 tags: ['tag1', 'tag2']
 image: './image.png'
 authors: ['author1', 'author2']
-draft: false
+published: true
+lang: 'en'
+series: 'My Series'
+seriesPart: 1
 ---
 ```
 
@@ -206,7 +195,11 @@ The blog post schema is defined as follows:
 | `image`       | `image()`       | Should be exactly 1200px &times; 630px.                                                                                                                                         | Optional |
 | `tags`        | `string[]`      | Preferably use kebab-case for these.                                                                                                                                            | Optional |
 | `authors`     | `string[]`      | If the author has a profile, use the id associated with their Markdown file in `src/content/authors/` (e.g. if their file is named `jane-doe.md`, use `jane-doe` in the array). | Optional |
-| `draft`       | `boolean`       | Defaults to `false` if not provided.                                                                                                                                            | Optional |
+| `published`   | `boolean`       | Defaults to `false`. Post is only visible when `true`.                                                                                                                          | Optional |
+| `draft`       | `boolean`       | Legacy visibility flag from upstream template. Defaults to `false`.                                                                                                             | Optional |
+| `lang`        | `'en' \| 'pt'`  | Locale of this post. Defaults to `'en'`. Portuguese posts should live under slugs prefixed with the series/topic name in PT.                                                    | Optional |
+| `series`      | `string`        | Name of the series this post belongs to.                                                                                                                                        | Optional |
+| `seriesPart`  | `number`        | Sequential position of this post within its series.                                                                                                                             | Optional |
 
 ### Authors
 
@@ -214,14 +207,14 @@ Add author information in `src/content/authors/` as Markdown files. A file named
 
 ```yml
 ---
-name: 'enscribe'
+name: 'Rhian Castro'
 pronouns: 'he/him'
-avatar: 'https://gravatar.com/avatar/9bfdc4ec972793cf05cb91efce5f4aaaec2a0da1bf4ec34dad0913f1d845faf6.webp?size=256'
-bio: 'd(-_-)b'
-website: 'https://enscribe.dev'
-twitter: 'https://twitter.com/enscry'
-github: 'https://github.com/jktrn'
-mail: 'jason@enscribe.dev'
+avatar: 'https://avatars.githubusercontent.com/u/1509115?v=4'
+bio: 'Just a bored software dev'
+website: 'https://orcololo.com'
+github: 'https://github.com/orcololo'
+linkedin: 'https://linkedin.com/in/rhian-castro'
+mail: 'rhi.castro@gmail.com'
 ---
 ```
 
@@ -249,13 +242,24 @@ Add projects in `src/content/projects/` as Markdown files:
 
 ```yml
 ---
-name: 'Project A'
-description: 'This is an example project description! You should replace this with a description of your own project.'
-tags: ['Framework A', 'Library B', 'Tool C', 'Resource D']
-image: '/static/1200x630.png'
-link: 'https://example.com'
-startDate: '2024-01-01'
-endDate: '2024-01-01'
+name: 'JoBoEco'
+description: 'Full-stack academic event management platform: registrations + Pix, paper submissions, peer review, QR check-in, HMAC-SHA256 certificates, BibTeX proceedings. 100% Cloudflare stack.'
+tags:
+  [
+    Next.js,
+    TypeScript,
+    Cloudflare Workers,
+    D1,
+    R2,
+    Drizzle ORM,
+    MercadoPago,
+    jsPDF,
+    Vitest,
+  ]
+image: '../../../public/static/joboeco.png'
+link: 'https://joboeco.org'
+startDate: '2026-01-01'
+endDate: '2026-03-01'
 ---
 ```
 
@@ -277,19 +281,6 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-### Star history
+Built with &hearts; by [orcololo](https://orcololo.com)!
 
-<a href="https://star-history.com/#jktrn/astro-erudite&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=jktrn/astro-erudite&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=jktrn/astro-erudite&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=jktrn/astro-erudite&type=Date" />
- </picture>
-</a>
-
----
-
-Built with &hearts; by [enscribe](https://enscribe.dev)!
-
-[Stargazers]: https://img.shields.io/github/stars/jktrn/astro-erudite?color=fafafa&logo=github&logoColor=fff&style=for-the-badge
 [License]: https://img.shields.io/github/license/jktrn/astro-erudite?color=0a0a0a&logo=github&logoColor=fff&style=for-the-badge
